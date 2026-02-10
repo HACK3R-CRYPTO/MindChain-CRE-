@@ -1,0 +1,25 @@
+{
+    "name": "agentmind-cre",
+    "version": "1.0.0",
+    "description": "Autonomous AI Knowledge Agent powered by Chainlink Runtime Environment",
+    "private": true,
+    "scripts": {
+        "setup": "npm install && cd workflows/ai-agent && bun install && cd ../../frontend && npm install && cd ../backend/x402-server && npm install && cd ../../contracts && npm install",
+        "dev:workflow": "cd workflows/ai-agent && cre workflow simulate .",
+        "dev:frontend": "cd frontend && npm run dev",
+        "dev:backend": "cd backend/x402-server && npm run dev",
+        "deploy:contracts": "cd contracts && npx hardhat run scripts/deploy.ts --network sepolia",
+        "test:contracts": "cd contracts && npx hardhat test"
+    },
+    "keywords": [
+        "chainlink",
+        "cre",
+        "x402",
+        "erc-8004",
+        "ai",
+        "ethereum",
+        "sepolia"
+    ],
+    "author": "Your Name",
+    "license": "MIT"
+}

@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables - ALL LOCATIONS
+.env
+.env.local
+.env*.local
+**/.env
+**/.env.local
+**/.env*.local
+.env.production
+.env.development
+
+# Python virtual environments
+.venv/
+venv/
+env/
+**/.venv/
+**/venv/
+**/env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build outputs
+dist/
+build/
+*.log
+.DS_Store
+.vscode/
+.idea/
+coverage/
+.cache/
+*.tsbuildinfo
+.next/
+out/
+
+# Hardhat / Ethereum
+cache/
+artifacts/
+deployments/
+typechain-types/
+
+# Model files (large)
+*.tflite
+*.h5
+*.pb
+*.onnx
+
+# Secrets & Keys
+*.key
+*.pem
+private-key.txt
+mnemonic.txt
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*

@@ -1,0 +1,23 @@
+name: ai-agent
+description: AI agent workflow with x402 payments and ERC-8004 identity
+version: 1.0.0
+
+# Workflow triggers
+triggers:
+  - type: http
+    path: /agent/query
+    method: POST
+
+# Environment variables
+env:
+  - GEMINI_API_KEY
+  - SEPOLIA_RPC
+  - AGENT_REGISTRY_ADDRESS
+  - PAYMENT_GATEWAY_ADDRESS
+
+# Capabilities required
+capabilities:
+  - http_client
+  - evm_read
+  - evm_write
+  - consensus

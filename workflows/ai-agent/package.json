@@ -1,0 +1,20 @@
+{
+    "name": "ai-agent-workflow",
+    "version": "1.0.0",
+    "description": "Chainlink CRE workflow for AI agent orchestration",
+    "type": "module",
+    "main": "index.ts",
+    "scripts": {
+        "simulate": "cre workflow simulate .",
+        "deploy": "cre workflow deploy .",
+        "build": "tsc"
+    },
+    "dependencies": {
+        "@chainlink/cre-sdk": "latest",
+        "dotenv": "^16.4.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "typescript": "^5.3.3"
+    }
+}
