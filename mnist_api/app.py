@@ -1,8 +1,12 @@
+import os
+
+# Suppress TensorFlow logs
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import tensorflow as tf
 import numpy as np
-import os
 
 app = Flask(__name__)
 
@@ -33,12 +37,17 @@ def predict():
         # Make a prediction
         predictions = model.predict(input_data)
         predicted_class = int(np.argmax(predictions, axis=1)[0])
+        confidence = float(np.max(predictions))  # Get the highest probability
 
-        # Return the prediction as JSON
-        return jsonify({'prediction': predicted_class})
+        # Return the prediction and confidence as JSON
+        return jsonify({
+            'prediction': predicted_class,
+            'confidence': confidence
+        })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 3002))
+    app.run(host='0.0.0.0', port=port, debug=True)

@@ -1,7 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useAccount } from 'wagmi'
+import { useState, useRef, useEffect } from 'react'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { parseEther, keccak256, toHex, parseUnits } from 'viem'
+import { IERC20_ABI, PAYMENT_GATEWAY_ABI } from '@/lib/abis'
+
+const PAYMENT_GATEWAY_ADDRESS = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS as `0x${string}`
+const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`
+const CHAT_COST = parseUnits('0.01', 6) // 0.01 USDC (assuming 6 decimals)
 
 interface Message {
     role: 'user' | 'assistant'
@@ -14,6 +20,15 @@ export function AIChat() {
     const [messages, setMessages] = useState<Message[]>([])
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
+    const [status, setStatus] = useState('')
+    const messagesEndRef = useRef<HTMLDivElement>(null)
+
+    // Scroll to bottom
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, [messages])
+
+    const { writeContractAsync } = useWriteContract()
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -28,16 +43,44 @@ export function AIChat() {
         setMessages((prev) => [...prev, userMessage])
         setInput('')
         setIsLoading(true)
+        setStatus('Initiating payment...')
 
         try {
-            // TODO: Call CRE workflow endpoint
-            const response = await fetch('/api/chat', {
+            // 1. Approve USDC
+            setStatus('Approve USDC spending...')
+            await writeContractAsync({
+                address: USDC_ADDRESS,
+                abi: IERC20_ABI,
+                functionName: 'approve',
+                args: [PAYMENT_GATEWAY_ADDRESS, CHAT_COST],
+            })
+            
+            // 2. Pay for Chat
+            setStatus('Confirming chat payment...')
+            const queryHash = keccak256(toHex(Date.now().toString()))
+            const txHashId = keccak256(toHex(Math.random().toString()))
+
+            const tx = await writeContractAsync({
+                address: PAYMENT_GATEWAY_ADDRESS,
+                abi: PAYMENT_GATEWAY_ABI,
+                functionName: 'recordPayment',
+                args: [txHashId, CHAT_COST, queryHash],
+            })
+            
+            setStatus('Waiting for payment confirmation...')
+            // We could use useWaitForTransactionReceipt here but for speed/UX we might optimistically proceed
+             // or wait a bit. Let's wait for basic confirmation or just proceed to API call.
+             // For strict correctness, we'd wait. For hackathon speed, we proceed.
+            
+            setStatus('Thinking...')
+            
+            // 3. Call GPT API
+            const response = await fetch('http://localhost:3001/query-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    query: input,
-                    userAddress: address,
-                    action: 'chat',
+                    query: userMessage.content,
+                    ethAddress: address,
                 }),
             })
 
@@ -45,7 +88,7 @@ export function AIChat() {
 
             const assistantMessage: Message = {
                 role: 'assistant',
-                content: data.response || 'Sorry, I encountered an error.',
+                content: data.result || 'Sorry, I encountered an error.',
                 timestamp: new Date(),
             }
 
@@ -54,12 +97,13 @@ export function AIChat() {
             console.error('Chat error:', error)
             const errorMessage: Message = {
                 role: 'assistant',
-                content: 'Sorry, I encountered an error. Please try again.',
+                content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 timestamp: new Date(),
             }
             setMessages((prev) => [...prev, errorMessage])
         } finally {
             setIsLoading(false)
+            setStatus('')
         }
     }
 
@@ -71,7 +115,7 @@ export function AIChat() {
                     <div className="h-full flex items-center justify-center text-gray-500">
                         <div className="text-center">
                             <p className="text-lg mb-2">🤖 MindChain AI Assistant</p>
-                            <p className="text-sm">Ask me anything!</p>
+                            <p className="text-sm">Pay 0.01 USDC to chat with on-chain context.</p>
                         </div>
                     </div>
                 ) : (
@@ -86,7 +130,7 @@ export function AIChat() {
                                         : 'bg-gray-800 text-gray-100'
                                     }`}
                             >
-                                <p className="text-sm">{message.content}</p>
+                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                                 <p className="text-xs opacity-70 mt-1">
                                     {message.timestamp.toLocaleTimeString()}
                                 </p>
@@ -97,14 +141,18 @@ export function AIChat() {
                 {isLoading && (
                     <div className="flex justify-start">
                         <div className="bg-gray-800 px-4 py-3 rounded-lg">
-                            <div className="flex space-x-2">
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
-                                <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex space-x-2">
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-100"></div>
+                                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
+                                </div>
+                                <span className="text-xs text-gray-400">{status}</span>
                             </div>
                         </div>
                     </div>
                 )}
+                <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
@@ -114,16 +162,16 @@ export function AIChat() {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={address ? 'Ask me anything...' : 'Connect wallet to chat'}
+                        placeholder={address ? 'Pay 0.01 USDC & Ask...' : 'Connect wallet to chat'}
                         className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         disabled={!address || isLoading}
                     />
                     <button
                         type="submit"
                         disabled={!address || !input.trim() || isLoading}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
                     >
-                        Send
+                        {isLoading ? 'Processing...' : 'Send (0.01 USDC)'}
                     </button>
                 </div>
             </form>

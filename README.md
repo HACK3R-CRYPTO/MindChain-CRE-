@@ -13,13 +13,12 @@
 
 ## 🎯 Overview
 
-**MindChain CRE** is a decentralized AI knowledge platform that combines **MNIST digit recognition**, **community knowledge sharing**, and **AI chat** - all orchestrated by **Chainlink Runtime Environment (CRE)** with **x402 micropayments**.
-
----
-
-## 🎯 Overview
-
-**AgentMind CRE** is a decentralized AI agent platform that demonstrates how **Chainlink Runtime Environment (CRE)** can orchestrate complex AI workflows with verifiable on-chain payments and agent identities.
+**MindChain CRE** is a decentralized AI knowledge platform that demonstrates how **Chainlink Runtime Environment (CRE)** can orchestrate complex AI workflows combining:
+- � **MNIST Digit Recognition** - Draw digits and get AI predictions
+- 📚 **Community Knowledge Sharing** - Submit and vote on knowledge
+- 💬 **AI Chat Assistant** - Powered by Gemini API
+- 🆔 **Agent Identity System** - ERC-8004 on-chain reputation
+- 💰 **x402 Micropayments** - Pay-per-use with USDC
 
 ### The Problem
 - AI agents lack verifiable identities and reputation systems
@@ -100,7 +99,7 @@ graph TB
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/agentmind-cre.git
+git clone https://github.com/HACK3R-CRYPTO/MindChain-CRE-.git
 cd agentmind-cre
 
 # Install CRE CLI (if not already installed)
@@ -187,24 +186,35 @@ npm run dev
 ## 📁 Project Structure
 
 ```
-agentmind-cre/
+mindchain-cre/
 ├── workflows/
 │   └── ai-agent/           # CRE workflow (TypeScript)
 │       ├── index.ts        # Main workflow logic
+│       ├── helpers.ts      # MNIST & knowledge helpers
 │       ├── workflow.yaml   # Workflow configuration
 │       └── package.json
 ├── contracts/              # Smart contracts (Solidity)
 │   ├── AgentRegistry.sol   # ERC-8004 agent registry
 │   ├── PaymentGateway.sol  # x402 payment verification
-│   └── scripts/
+│   ├── KnowledgeShare.sol  # Community knowledge contract
+│   └── scripts/deploy.ts
 ├── frontend/               # Next.js frontend
 │   ├── app/
+│   │   ├── api/            # API routes
+│   │   ├── page.tsx        # Main page
+│   │   └── layout.tsx
 │   ├── components/
-│   └── lib/
-├── backend/
-│   └── x402-server/        # x402 payment server
-│       └── index.ts
-└── scripts/                # Deployment & utility scripts
+│   │   ├── mnist-canvas.tsx
+│   │   ├── knowledge-share.tsx
+│   │   ├── ai-chat.tsx
+│   │   └── providers.tsx
+│   └── lib/wagmi.ts
+├── mnist_api/              # MNIST prediction API (Python)
+│   ├── app.py
+│   ├── model.keras
+│   └── requirements.txt
+└── trainer/                # MNIST model training
+    └── train.py
 ```
 
 ---
@@ -221,8 +231,9 @@ This project uses the following Chainlink components:
 - **Consensus**: Ensures reliable execution across DON
 
 ### Smart Contracts (`contracts/`)
-- **AgentRegistry.sol**: ERC-8004 compliant agent identity registry
+- **AgentRegistry.sol**: ERC-8004 compliant agent identity registry (MindChain Identity NFT)
 - **PaymentGateway.sol**: x402 payment verification contract
+- **KnowledgeShare.sol**: Community knowledge submission and voting system
 
 ---
 
@@ -260,8 +271,9 @@ npx hardhat test
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentRegistry | `0x...` | [View on Etherscan](https://sepolia.etherscan.io/address/0x...) |
-| PaymentGateway | `0x...` | [View on Etherscan](https://sepolia.etherscan.io/address/0x...) |
+| AgentRegistry | `0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514` | [View on Etherscan](https://sepolia.etherscan.io/address/0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514) |
+| PaymentGateway | `0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519` | [View on Etherscan](https://sepolia.etherscan.io/address/0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519) |
+| USDC (Sepolia) | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [View on Etherscan](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238) |
 
 ---
 
