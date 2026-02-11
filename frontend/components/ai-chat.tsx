@@ -54,7 +54,7 @@ export function AIChat() {
                 functionName: 'approve',
                 args: [PAYMENT_GATEWAY_ADDRESS, CHAT_COST],
             })
-            
+
             // 2. Pay for Chat
             setStatus('Confirming chat payment...')
             const queryHash = keccak256(toHex(Date.now().toString()))
@@ -66,21 +66,24 @@ export function AIChat() {
                 functionName: 'recordPayment',
                 args: [txHashId, CHAT_COST, queryHash],
             })
-            
+
             setStatus('Waiting for payment confirmation...')
             // We could use useWaitForTransactionReceipt here but for speed/UX we might optimistically proceed
-             // or wait a bit. Let's wait for basic confirmation or just proceed to API call.
-             // For strict correctness, we'd wait. For hackathon speed, we proceed.
-            
+            // or wait a bit. Let's wait for basic confirmation or just proceed to API call.
+            // For strict correctness, we'd wait. For hackathon speed, we proceed.
+
             setStatus('Thinking...')
-            
-            // 3. Call GPT API
-            const response = await fetch('http://localhost:3001/query-ai', {
+
+            // 3. Call CRE / Simulation API
+            const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-payment-tx-hash': tx // Send transaction hash for verification
+                },
                 body: JSON.stringify({
                     query: userMessage.content,
-                    ethAddress: address,
+                    userAddress: address,
                 }),
             })
 
@@ -88,7 +91,7 @@ export function AIChat() {
 
             const assistantMessage: Message = {
                 role: 'assistant',
-                content: data.result || 'Sorry, I encountered an error.',
+                content: data.response || data.result || 'Sorry, I encountered an error.',
                 timestamp: new Date(),
             }
 
@@ -126,8 +129,8 @@ export function AIChat() {
                         >
                             <div
                                 className={`max-w-[80%] px-4 py-3 rounded-lg ${message.role === 'user'
-                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                                        : 'bg-gray-800 text-gray-100'
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                                    : 'bg-gray-800 text-gray-100'
                                     }`}
                             >
                                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>

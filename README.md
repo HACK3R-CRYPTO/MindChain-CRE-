@@ -5,7 +5,7 @@
 [![Chainlink](https://img.shields.io/badge/Chainlink-CRE-375BD2)](https://chain.link)
 [![x402](https://img.shields.io/badge/Protocol-x402-orange)](https://x402.org)
 [![ERC-8004](https://img.shields.io/badge/Standard-ERC--8004-green)](https://eips.ethereum.org/EIPS/eip-8004)
-[![Network](https://img.shields.io/badge/Network-Ethereum_Sepolia-blue)](https://sepolia.etherscan.io)
+[![Network](https://img.shields.io/badge/Network-Base_Sepolia-blue)](https://sepolia.basescan.org)
 
 > Built for the [Chainlink Convergence Hackathon 2026](https://chain.link/hackathon) - CRE & AI Track
 
@@ -29,9 +29,9 @@
 ### The Solution
 Use **Chainlink CRE** as the orchestration layer to coordinate:
 1. 🧠 **AI Knowledge Operations** - Query processing, knowledge retrieval, response generation
-2. 💰 **x402 Micropayments** - Pay-per-use AI services with USDC on Ethereum Sepolia
+2. 💰 **On-Chain Micropayments** - Pay-per-use AI services with USDC on Base Sepolia
 3. 🆔 **Agent Identity Management** - ERC-8004 registry for agent reputation
-4. 🔗 **Cross-chain Coordination** - Seamless interaction between Ethereum and external APIs
+4. 🔗 **Cross-chain Coordination** - Seamless interaction between Blockchain and external APIs
 
 ---
 
@@ -40,10 +40,9 @@ Use **Chainlink CRE** as the orchestration layer to coordinate:
 ```mermaid
 graph TB
     User[User/AI Agent] -->|1. Query + Payment| Frontend[Next.js Frontend]
-    Frontend -->|2. HTTP 402 Check| X402[x402 Payment Server]
-    X402 -->|3. Payment Required| Frontend
-    Frontend -->|4. USDC Payment| Sepolia[Ethereum Sepolia]
-    Frontend -->|5. Query + Proof| CRE[Chainlink CRE Workflow]
+    Frontend -->|2. Approve USDC| BaseSepolia[Base Sepolia]
+    Frontend -->|3. Record Payment| PaymentGateway[PaymentGateway Contract]
+    Frontend -->|4. Query + TxHash| CRE[Chainlink CRE Workflow]
     
     CRE -->|6. Verify Payment| PaymentGateway[PaymentGateway Contract]
     CRE -->|7. Get Agent Identity| AgentRegistry[AgentRegistry ERC-8004]
@@ -51,11 +50,11 @@ graph TB
     CRE -->|9. Update Reputation| AgentRegistry
     CRE -->|10. Response| Frontend
     
-    Sepolia -.->|Contains| PaymentGateway
-    Sepolia -.->|Contains| AgentRegistry
+    BaseSepolia -.->|Contains| PaymentGateway
+    BaseSepolia -.->|Contains| AgentRegistry
     
     style CRE fill:#f9f,stroke:#333,stroke-width:4px
-    style Sepolia fill:#bbf,stroke:#333,stroke-width:2px
+    style BaseSepolia fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
 ---
@@ -63,10 +62,10 @@ graph TB
 ## ✨ Key Features
 
 - ✅ **Chainlink CRE Orchestration** - TypeScript workflows with HTTP triggers and AI integration
-- ✅ **x402 Payment Protocol** - Micropayments for AI services using USDC
+- ✅ **Direct On-Chain Micropayments** - Pay-per-use AI services with USDC
 - ✅ **ERC-8004 Agent Registry** - On-chain agent identities and reputation
 - ✅ **AI Integration** - Gemini/OpenAI for knowledge responses
-- ✅ **Ethereum Sepolia** - No VPN required, easy testnet access
+- ✅ **Base Sepolia (L2)** - Fast, cheap transactions with ETH compatibility
 - ✅ **Verifiable Execution** - All AI operations recorded on-chain
 
 ---
@@ -76,11 +75,10 @@ graph TB
 | Layer | Technology | Purpose |
 |-------|------------|---------|
 | **Orchestration** | Chainlink CRE (TypeScript SDK) | Workflow coordination |
-| **Blockchain** | Ethereum Sepolia | Smart contracts & payments |
-| **Payments** | x402 Protocol + USDC | Micropayment infrastructure |
+| **Blockchain** | Base Sepolia (L2) | Smart contracts & payments |
+| **Payments** | USDC + PaymentGateway Contract | Micropayment infrastructure |
 | **AI** | Gemini/OpenAI APIs | Knowledge generation |
-| **Frontend** | Next.js 14 + Tailwind | User interface |
-| **Backend** | Node.js + Express | x402 payment server |
+| **Frontend** | Next.js 14 + Tailwind + viem | User interface |
 | **Contracts** | Solidity + Hardhat | ERC-8004 registry |
 
 ---
@@ -92,8 +90,8 @@ graph TB
 - Node.js 18+
 - CRE CLI installed ([Installation Guide](https://docs.chain.link/chainlink-runtime-environment))
 - CRE account at [cre.chain.link](https://cre.chain.link)
-- MetaMask with Ethereum Sepolia testnet
-- Sepolia ETH from [faucet](https://sepoliafaucet.com)
+- MetaMask with **Base Sepolia** testnet configured
+- Base Sepolia ETH from [faucet](https://www.alchemy.com/faucets/base-sepolia)
 
 ### Installation
 
@@ -108,20 +106,8 @@ curl -sSL https://install.chain.link/cre | bash
 # Authenticate with CRE
 cre login
 
-# Install workflow dependencies
-cd workflows/ai-agent
-bun install
-
 # Install frontend dependencies
 cd ../../frontend
-npm install
-
-# Install backend dependencies
-cd ../backend/x402-server
-npm install
-
-# Install contract dependencies
-cd ../../contracts
 npm install
 ```
 
@@ -140,41 +126,27 @@ SEPOLIA_RPC=https://sepolia.infura.io/v3/YOUR_KEY
 **`contracts/.env`**
 ```bash
 PRIVATE_KEY=your_private_key
-SEPOLIA_RPC=https://sepolia.infura.io/v3/YOUR_KEY
+BASE_SEPOLIA_RPC=https://sepolia.base.org
 ETHERSCAN_API_KEY=your_etherscan_key
 ```
 
-**`backend/x402-server/.env`**
-```bash
-PORT=3001
-SEPOLIA_RPC=https://sepolia.infura.io/v3/YOUR_KEY
-USDC_ADDRESS=0x... # Sepolia USDC address
-PAYMENT_GATEWAY_ADDRESS=0x... # Deployed contract address
-```
+
 
 ### Deploy Smart Contracts
 
 ```bash
 cd contracts
 npx hardhat compile
-npx hardhat run scripts/deploy.ts --network sepolia
+npx hardhat run scripts/deploy.ts --network baseSepolia
 ```
 
 ### Simulate CRE Workflow
 
-```bash
-cd workflows/ai-agent
-cre workflow simulate .
-```
 
 ### Run the Application
 
 ```bash
-# Terminal 1: Start x402 payment server
-cd backend/x402-server
-npm run dev
-
-# Terminal 2: Start frontend
+# Start frontend
 cd frontend
 npm run dev
 
@@ -187,35 +159,45 @@ npm run dev
 
 ```
 mindchain-cre/
-├── workflows/
-│   └── ai-agent/           # CRE workflow (TypeScript)
-│       ├── index.ts        # Main workflow logic
-│       ├── helpers.ts      # MNIST & knowledge helpers
-│       ├── workflow.yaml   # Workflow configuration
-│       └── package.json
-├── contracts/              # Smart contracts (Solidity)
+├── ai-agent/               # CRE workflow (TypeScript)
+│   ├── main.ts             # Main workflow logic
+│   └── package.json
+├── project.yaml            # CRE Project Config
+└── secrets.yaml            # Encrypted secrets (gitignored)
+contracts/                  # Smart contracts (Solidity)
+├── contracts/
 │   ├── AgentRegistry.sol   # ERC-8004 agent registry
-│   ├── PaymentGateway.sol  # x402 payment verification
-│   ├── KnowledgeShare.sol  # Community knowledge contract
-│   └── scripts/deploy.ts
-├── frontend/               # Next.js frontend
-│   ├── app/
-│   │   ├── api/            # API routes
-│   │   ├── page.tsx        # Main page
-│   │   └── layout.tsx
-│   ├── components/
-│   │   ├── mnist-canvas.tsx
-│   │   ├── knowledge-share.tsx
-│   │   ├── ai-chat.tsx
-│   │   └── providers.tsx
-│   └── lib/wagmi.ts
-├── mnist_api/              # MNIST prediction API (Python)
-│   ├── app.py
-│   ├── model.keras
-│   └── requirements.txt
-└── trainer/                # MNIST model training
-    └── train.py
+│   ├── PaymentGateway.sol  # On-chain payment verification
+│   └── KnowledgeShare.sol  # Community knowledge contract
+└── scripts/deploy.ts
+frontend/                   # Next.js frontend
+├── app/
+│   ├── api/                # API routes (Chat, etc.)
+│   ├── page.tsx            # Main page
+│   └── layout.tsx
+├── components/
+│   ├── mnist-canvas.tsx
+│   ├── knowledge-share.tsx
+│   ├── ai-chat.tsx
+│   └── providers.tsx
+└── lib/wagmi.ts
+mnist_api/                  # MNIST prediction API (Python)
+├── app.py
+├── model.keras
+└── requirements.txt
+_archive/                   # Legacy code (gpt_api, backend)
 ```
+
+## 📚 Component Documentation
+
+Detailed documentation for each component can be found here:
+
+| Component | Description | Config & Setup |
+|-----------|-------------|----------------|
+| [**🖥️ Frontend**](./frontend/README.md) | Next.js UI, Wallet, & Canvas | `frontend/.env.local` |
+| [**📜 Smart Contracts**](./contracts/README.md) | Solidity code & Deploy scripts | `contracts/.env` |
+| [**🔮 CRE Agent**](./mindchain-cre/ai-agent/README.md) | Chainlink Workflow & AI Logic | `mindchain-cre/secrets.yaml` |
+| [**👁️ Vision Node**](./mnist_api/README.md) | Python API for MNIST Model | `mnist_api/requirements.txt` |
 
 ---
 
@@ -223,17 +205,16 @@ mindchain-cre/
 
 This project uses the following Chainlink components:
 
-### CRE Workflow (`workflows/ai-agent/`)
-- **HTTP Trigger**: Receives user queries via HTTP endpoint
-- **HTTP Client Capability**: Calls Gemini/OpenAI APIs
-- **EVM Read Capability**: Verifies payments and reads agent data
-- **EVM Write Capability**: Updates agent reputation on-chain
-- **Consensus**: Ensures reliable execution across DON
+### CRE Workflow (`mindchain-cre/ai-agent/`)
+- [**main.ts**](./mindchain-cre/ai-agent/main.ts): Main workflow logic using Chainlink CRE SDK.
+  - **HTTP Trigger**: Receives user queries via HTTP endpoint.
+  - **HTTP Client Capability**: Calls Gemini/OpenAI APIs.
+  - **Simulation Mode**: Uses `frontend/lib/simulation.ts` for instant demo.
 
 ### Smart Contracts (`contracts/`)
-- **AgentRegistry.sol**: ERC-8004 compliant agent identity registry (MindChain Identity NFT)
-- **PaymentGateway.sol**: x402 payment verification contract
-- **KnowledgeShare.sol**: Community knowledge submission and voting system
+- [**AgentRegistry.sol**](./contracts/contracts/AgentRegistry.sol): ERC-8004 compliant agent identity registry (MindChain Identity NFT).
+- [**PaymentGateway.sol**](./contracts/contracts/PaymentGateway.sol): x402 payment verification contract.
+- [**KnowledgeShare.sol**](./contracts/contracts/KnowledgeShare.sol): Community knowledge submission and voting system.
 
 ---
 
@@ -247,7 +228,7 @@ This project uses the following Chainlink components:
 
 ### Simulate CRE Workflow
 ```bash
-cd workflows/ai-agent
+cd mindchain-cre/ai-agent
 cre workflow simulate .
 ```
 
@@ -258,12 +239,12 @@ npx hardhat test
 ```
 
 ### End-to-End Test
-1. Connect wallet to Ethereum Sepolia
+1. Connect wallet to **Base Sepolia**
 2. Register as an AI agent
 3. Submit a query: "What is blockchain?"
 4. Approve USDC payment
 5. Receive AI response
-6. Verify transaction on Sepolia Etherscan
+6. Verify transaction on **BaseScan**
 
 ---
 
@@ -271,16 +252,16 @@ npx hardhat test
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentRegistry | `0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514` | [View on Etherscan](https://sepolia.etherscan.io/address/0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514) |
-| PaymentGateway | `0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519` | [View on Etherscan](https://sepolia.etherscan.io/address/0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519) |
-| USDC (Sepolia) | `0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238` | [View on Etherscan](https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238) |
+| AgentRegistry | `0x0Cd8459F4cAc09517392896639938dDA01dD6fd9` | [View on Basescan](https://sepolia.basescan.org/address/0x0Cd8459F4cAc09517392896639938dDA01dD6fd9) |
+| PaymentGateway | `0xa6f0e4027F97B448369463288c46436D3DaD6b24` | [View on Basescan](https://sepolia.basescan.org/address/0xa6f0e4027F97B448369463288c46436D3DaD6b24) |
+| USDC (Base Sepolia) | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [View on Basescan](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
 
 ---
 
 ## 🏆 Hackathon Requirements
 
 ✅ **CRE Workflow**: TypeScript workflow with HTTP trigger and AI integration  
-✅ **Blockchain + External Integration**: Ethereum Sepolia + Gemini API + x402  
+✅ **Blockchain + External Integration**: Base Sepolia + Gemini API + PaymentGateway
 ✅ **Simulation/Deployment**: CRE CLI simulation + production deployment  
 ✅ **Demo Video**: 3-5 minute walkthrough  
 ✅ **Public Source Code**: GitHub repository  

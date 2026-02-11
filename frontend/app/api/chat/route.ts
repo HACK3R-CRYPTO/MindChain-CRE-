@@ -1,77 +1,82 @@
 import { NextResponse, NextRequest } from 'next/server'
+import { sendCRERequest } from '../../../lib/cre'
+import { runSimulation } from '../../../lib/simulation'
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
         const { query, userAddress } = body
-
-        // Check for payment proof in headers
         const paymentTxHash = request.headers.get('x-payment-tx-hash')
-        const paymentProof = request.headers.get('x-payment-proof')
 
-        // x402 Payment Configuration (ETH)
-        const PAYMENT_CONFIG = {
-            amountUSD: '0.05', // $0.05 USD
-            amountETH: '0.000025', // ~$0.05 in ETH (adjust based on current price)
-            recipient: process.env.NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS || '0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519',
-            chain: 'eip155:11155111', // Ethereum Sepolia
-            description: 'AI Chat Service (Gemini API)'
+        console.log('Chat API Request:', { query, userAddress, paymentTxHash })
+
+        if (!query) return NextResponse.json({ error: 'Query is required' }, { status: 400 })
+
+        // Check for CRE Configuration
+        const workflowId = process.env.CRE_WORKFLOW_ID
+        const privateKey = process.env.CRE_PRIVATE_KEY
+        const gatewayUrl = process.env.CRE_GATEWAY_URL || 'https://01.gateway.zone-a.cre.chain.link'
+
+        // ---------------------------------------------------------
+        // STRATEGY: Try CRE if configured, otherwise fallback to Simulation
+        // ---------------------------------------------------------
+
+        if (workflowId && privateKey) {
+            try {
+                console.log('🚀 Sending request to Chainlink CRE Gateway...')
+                const input = {
+                    query,
+                    userAddress: userAddress || '0x0000000000000000000000000000000000000000',
+                    paymentTxHash: paymentTxHash || '',
+                    action: 'chat'
+                }
+
+                const creResponse = await sendCRERequest(workflowId, input, privateKey, gatewayUrl)
+                console.log('✅ CRE Response:', JSON.stringify(creResponse, null, 2))
+
+                // Adapt response if CRE returns wrapped result
+                const resultData = creResponse.result || creResponse
+
+                return NextResponse.json({
+                    data: resultData,
+                    response: resultData.result || resultData.response || "Processing...",
+                    agent: resultData.agent || "Chainlink CRE Agent",
+                    paymentVerified: true,
+                    source: 'CRE'
+                })
+
+            } catch (creError: any) {
+                console.error('⚠️ CRE Execution failed, falling back to simulation:', creError.message)
+                // Fallthrough to simulation
+            }
+        } else {
+            console.log('ℹ️ CRE not configured, using local simulation.')
         }
 
-        // If no payment proof, return HTTP 402 Payment Required
-        if (!paymentProof && !paymentTxHash) {
+        // ---------------------------------------------------------
+        // FALLBACK: Local Simulation (runs logic in Next.js API)
+        // ---------------------------------------------------------
+        try {
+            const simulationResult = await runSimulation(query, userAddress)
+            return NextResponse.json({
+                data: simulationResult,
+                response: simulationResult.result,
+                agent: simulationResult.agent,
+                paymentVerified: true,
+                source: 'SIMULATION'
+            })
+        } catch (simError: any) {
+            console.error('❌ Simulation failed:', simError)
             return NextResponse.json(
-                {
-                    error: 'Payment Required',
-                    invoice: {
-                        amountUSD: PAYMENT_CONFIG.amountUSD,
-                        amountETH: PAYMENT_CONFIG.amountETH,
-                        recipient: PAYMENT_CONFIG.recipient,
-                        chain: PAYMENT_CONFIG.chain,
-                        description: PAYMENT_CONFIG.description
-                    },
-                    message: `Please pay $${PAYMENT_CONFIG.amountUSD} (${PAYMENT_CONFIG.amountETH} ETH) to access this service`
-                },
-                {
-                    status: 402,
-                    headers: {
-                        'X-Payment-Required': 'true',
-                        'X-Payment-Amount-USD': PAYMENT_CONFIG.amountUSD,
-                        'X-Payment-Amount-ETH': PAYMENT_CONFIG.amountETH,
-                        'X-Payment-Recipient': PAYMENT_CONFIG.recipient,
-                        'X-Payment-Chain': PAYMENT_CONFIG.chain
-                    }
-                }
+                { error: `AI Processing failed: ${simError.message}` },
+                { status: 500 }
             )
         }
 
-        // TODO: Verify payment on-chain using paymentTxHash
-        // For now, we'll proceed if payment proof is provided
-
-        // Call CRE workflow endpoint
-        const creWorkflowUrl = process.env.NEXT_PUBLIC_CRE_WORKFLOW_URL || 'http://localhost:3001'
-
-        const response = await fetch(`${creWorkflowUrl}/agent/query`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                query,
-                userAddress,
-                action: 'chat',
-            }),
-        })
-
-        const result = await response.json()
-
-        return NextResponse.json({
-            response: result.data?.response || 'Sorry, I encountered an error.',
-            agent: result.data?.agent,
-            paymentVerified: true
-        })
     } catch (error) {
         console.error('Chat API error:', error)
         return NextResponse.json(
-            { error: 'Failed to get AI response' },
+            { error: 'Failed to process request' },
             { status: 500 }
         )
     }

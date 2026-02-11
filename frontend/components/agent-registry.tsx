@@ -103,7 +103,7 @@ export function AgentRegistry() {
                     <button
                         type="submit"
                         disabled={!address || !name || isRegistering || isConfirming}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all disabled:opacity-50"
+                        className="w-full px-6 py-3 bg-linear-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-lg transition-all disabled:opacity-50"
                     >
                         {isRegistering ? 'Uploading to IPFS...' : isConfirming ? 'Confirming On-Chain...' : 'Register Identity (EIP-8004)'}
                     </button>

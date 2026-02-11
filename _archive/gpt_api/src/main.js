@@ -17,7 +17,9 @@ const {
   RPC_URL,
   PORT,
   ALLOWED_ORIGIN,
-  PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs/'
+  PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs/',
+  PAYMENT_GATEWAY_ADDRESS,
+  KNOWLEDGE_SHARE_ADDRESS
 } = process.env;
 
 const looksLikePlaceholder = (value) =>
@@ -28,6 +30,11 @@ const hasOpenAIKey = !looksLikePlaceholder(OPENAI_API_KEY);
 
 if (!PRIVATE_KEY || !RPC_URL) {
   console.error('Error: Missing PRIVATE_KEY or RPC_URL environment variables.');
+  process.exit(1);
+}
+
+if (!PAYMENT_GATEWAY_ADDRESS || !KNOWLEDGE_SHARE_ADDRESS) {
+  console.error('Error: Missing contract addresses in environment variables.');
   process.exit(1);
 }
 
@@ -60,8 +67,13 @@ if (!geminiModel && !openaiClient) {
   console.warn('No AI provider is available. Responses will be mocked.');
 }
 
-const CONTRACT_ADDRESS = '0x370f6701cFDECC0A9D744a12b156317AA3CE32D1';
-const KNOWLEDGE_ADDRESS = '0x7A2b66A6ec9892fB9f40EAbF45bB5C2b723263F5';
+// Payment Gateway ABI (minimal for balance adjustment/checking if needed)
+// NOTE: PaymentGateway doesn't really have "balanceOf" for users in the x402 sense, 
+// it has `getUserPayments`. But we are skipping credit check for hackathon anyway.
+// We will keep the old ABI logic but point to new address to avoid breaking code structure,
+// even if we are mocking/skipping the check.
+const CONTRACT_ADDRESS = PAYMENT_GATEWAY_ADDRESS;
+const KNOWLEDGE_ADDRESS = KNOWLEDGE_SHARE_ADDRESS;
 
 const ABI = [
   'function purchase() external payable returns (uint256)',
@@ -207,10 +219,14 @@ app.post('/query-ai', async (req, res) => {
 You are Mindchain AI. You have access to a decentralized registry of "Verified On-Chain Knowledge".
 
 INSTRUCTIONS:
-1. PRIORITIZE the Verified Knowledge below. If the user's question is answered by it, use it.
-2. If the Verified Knowledge is NOT relevant to the question, answer using your general training.
-3. NEVER simply recite the Verified Knowledge if it does not answer the specific question asked.
-4. IF there are conflicting facts in the Verified Knowledge (e.g. two different answers for the same thing), YOU MUST MENTION BOTH distinct claims and state that there is a conflict in the registry.
+1. FIRST, check the "Verified On-Chain Knowledge" below.
+   - If it contains the answer, USE IT and mention it is "verified by the community".
+   - If it contains CONFLICTING information, mention both claims.
+
+2. SECOND, if the Verified Knowledge does NOT answer the question (or is empty):
+   - Answer the question using your own general knowledge.
+   - You do NOT need to apologize for missing registry data.
+   - Just answer helpfully like a normal AI Assistant.
 
 Verified On-Chain Knowledge:
 ${onChainKnowledge.length > 0 ? onChainKnowledge.map(k => `- ${k}`).join('\n') : "(No verified knowledge available yet)"}
@@ -218,7 +234,7 @@ ${onChainKnowledge.length > 0 ? onChainKnowledge.map(k => `- ${k}`).join('\n') :
 User Question:
 ${query}
 `.trim();
-    
+
     let aiResponse;
     if (geminiModel || openaiClient) {
       aiResponse = await generateResponse(prompt);

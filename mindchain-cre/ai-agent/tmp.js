@@ -13767,20 +13767,96 @@ var sendErrorResponse = (error) => {
   }
   hostBindings.sendResponse(payload);
 };
-var onHttpTrigger = (runtime2, payload) => {
+var getAgentIdentity = async (runtime2, userAddress) => {
+  const agentRegistryABI = [
+    {
+      inputs: [{ name: "agent", type: "address" }],
+      name: "getAgentInfo",
+      outputs: [
+        { name: "tokenId", type: "uint256" },
+        { name: "name", type: "string" },
+        { name: "reputation", type: "int256" },
+        { name: "totalInteractions", type: "uint256" }
+      ],
+      stateMutability: "view",
+      type: "function"
+    }
+  ];
+  const rpcUrl = "https://sepolia-rollup.arbitrum.io/rpc";
+  return {
+    tokenId: 1n,
+    name: "Agent Zero",
+    reputation: 100n,
+    totalInteractions: 50n
+  };
+};
+var callGeminiAI = async (runtime2, prompt, apiKey) => {
   try {
-    const requestData = JSON.parse(payload.input);
+    const httpClient = new ClientCapability;
+    const request = {
+      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: new TextEncoder().encode(JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      }))
+    };
+    const responseFn = httpClient.sendRequest(runtime2, request);
+    const response = await responseFn.result();
+    const responseText = new TextDecoder().decode(response.body);
+    runtime2.log(`Gemini Status: ${response.statusCode}`);
+    runtime2.log(`Gemini Response: ${responseText}`);
+    const data = JSON.parse(responseText);
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    return "I'm thinking, but I couldn't generate a response right now.";
+  } catch (e) {
+    runtime2.log(`Gemini Error: ${e}`);
+    return "Error connecting to AI brain.";
+  }
+};
+var onHttpTrigger = async (runtime2, payload) => {
+  try {
+    const inputString = typeof payload.input === "string" ? payload.input : new TextDecoder().decode(payload.input);
+    const requestData = JSON.parse(inputString);
     runtime2.log(`\uD83E\uDD16 MindChain CRE Workflow started`);
     runtime2.log(`Action: ${requestData.action}`);
     runtime2.log(`User: ${requestData.userAddress}`);
-    const response = {
+    const agentInfo = await getAgentIdentity(runtime2, requestData.userAddress);
+    if (requestData.action === "chat" && requestData.query) {
+      const systemPrompt = `You are MindChain, an AI Assistant on Base Sepolia.
+            You are talking to an agent named ${agentInfo.name} (Reputation: ${agentInfo.reputation}).
+            Keep answers concise and helpful.`;
+      const fullPrompt = `${systemPrompt}
+
+User: ${requestData.query}`;
+      let apiKey;
+      try {
+        const secretData = await runtime2.getSecret({ id: "GEMINI_API_KEY", namespace: "" });
+        if (secretData && secretData.result) {
+          apiKey = secretData.result().value;
+        }
+      } catch (e) {
+        runtime2.log(`Secrets lookup failed (expected in local sim without advanced config): ${e}`);
+      }
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY not found. Ensure it is set in your secrets.yaml or environment.");
+      }
+      const aiResponse = await callGeminiAI(runtime2, fullPrompt, apiKey);
+      return {
+        status: "success",
+        result: aiResponse,
+        agent: {
+          name: agentInfo.name,
+          reputation: agentInfo.reputation.toString()
+        }
+      };
+    }
+    return {
       status: "success",
-      action: requestData.action,
-      message: `Processed ${requestData.action} for ${requestData.userAddress}`,
-      timestamp: new Date().toISOString()
+      message: `Processed ${requestData.action} (No AI response needed)`
     };
-    runtime2.log(`✅ Response: ${JSON.stringify(response)}`);
-    return response;
   } catch (error) {
     runtime2.log(`❌ Error: ${error}`);
     return {
@@ -13791,8 +13867,14 @@ var onHttpTrigger = (runtime2, payload) => {
 };
 var initWorkflow = (config) => {
   const http = new HTTPCapability;
+  const authorizedKeys = config.AUTHORIZED_ADDRESS ? [{
+    type: "KEY_TYPE_ECDSA_EVM",
+    publicKey: config.AUTHORIZED_ADDRESS
+  }] : [];
   return [
-    handler(http.trigger({}), onHttpTrigger)
+    handler(http.trigger({
+      authorizedKeys
+    }), onHttpTrigger)
   ];
 };
 async function main() {

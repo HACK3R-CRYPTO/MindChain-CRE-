@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MindChain Frontend 🎨
 
-## Getting Started
+The user interface for the **MindChain CRE** platform, built with **Next.js 14**, **Tailwind CSS**, and **wagmi/viem**.
 
-First, run the development server:
+## ✨ Features
 
+- **Connect Wallet**: Integrated with RainbowKit/Wagmi for Base Sepolia.
+- **MNIST Canvas**: Draw digits and submit them for AI prediction (with on-chain payment).
+- **Agent Registry**: Interact with the ERC-8004 contract to register identities.
+- **Knowledge Share**: Upload knowledge to IPFS and submit to the blockchain.
+- **AI Chat**: Pay-per-use chat interface integrated with Chainlink CRE via Next.js API routes.
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS
+- **Web3**: wagmi, viem, TanStack Query
+- **IPFS**: Pinata SDK
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- `contracts` deployed (for contract addresses)
+
+### Installation
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Configuration
+Create a `.env.local` file:
+```bash
+# WalletConnect Project ID (Get from cloud.walletconnect.com)
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_project_id
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# Deployed Contract Addresses (Base Sepolia)
+NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS=0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514
+NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS=0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519
+NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS=0x... # (Update after deployment)
+NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Run Locally
+```bash
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## 🤖 AI Chat Integration
+The AI Chat uses a Next.js API Route (`/api/chat`) which acts as a bridge between the frontend wallet signature/payment and the **Chainlink CRE** environment (or local simulation).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📄 Pages
+- **Home (`/`)**: Main dashboard with tabs for MNIST, Knowledge, and Agent Registry.
+- **API (`/api/chat`)**: Backend route for AI processing.

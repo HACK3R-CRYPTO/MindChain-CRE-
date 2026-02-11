@@ -108,7 +108,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('mnist')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'mnist'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+              ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >
@@ -117,7 +117,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('knowledge')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'knowledge'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+              ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >
@@ -126,7 +126,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('registry')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'registry'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+              ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >

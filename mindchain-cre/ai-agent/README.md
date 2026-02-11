@@ -1,53 +1,46 @@
-# Typescript Simple Workflow Example
+# MindChain AI Agent Workflow 🧠
 
-This template provides a simple Typescript workflow example. It shows how to create a simple "Hello World" workflow using Typescript.
+This directory contains the **Chainlink Runtime Environment (CRE)** workflow that powers the AI capabilities of the MindChain platform.
 
-Steps to run the example
+## 🎯 What it Does
 
-## 1. Update .env file
+1.  **Receives Request**: Listens for HTTP triggers from the Next.js frontend (`/api/chat`).
+2.  **Verifies Identity**: Checks the user's `AgentRegistry` status on Base Sepolia (Simulated/Mocked for generic call).
+3.  **Secure Execution**: Retrieves `GEMINI_API_KEY` using `runtime.getSecret`.
+4.  **AI Processing**: Calls Google's Gemini 2.0 Flash API to generate a response based on the on-chain persona.
+5.  **Returns Result**: Sends the AI response back to the frontend.
 
-You need to add a private key to env file. This is specifically required if you want to simulate chain writes. For that to work the key should be valid and funded.
-If your workflow does not do any chain write then you can just put any dummy key as a private key. e.g.
+## 📂 Structure
 
-```
-CRE_ETH_PRIVATE_KEY=0000000000000000000000000000000000000000000000000000000000000001
-```
+- **`main.ts`**: The core logic. Typescript workflow using `@chainlink/cre-sdk`.
+- **`workflow.yaml`**: Configuration for the workflow (entry point, secrets path, etc.).
+- **`secrets.yaml`**: Encrypted/Local secrets file (Gitignored).
+- **`package.json`**: Dependencies.
 
-Note: Make sure your `workflow.yaml` file is pointing to the config.json, example:
+## 🧪 Simulation (Hackathon Demo)
 
+Since CRE deployment is in Early Access, we use the **CLI Simulator** for the demo.
+
+### 1. Setup Secrets
+Ensure you have `mindchain-cre/secrets.yaml`:
 ```yaml
-staging-settings:
-  user-workflow:
-    workflow-name: "hello-world"
-  workflow-artifacts:
-    workflow-path: "./main.ts"
-    config-path: "./config.json"
+GEMINI_API_KEY: AIzaSy...
 ```
 
-## 2. Install dependencies
-
-If `bun` is not already installed, see https://bun.com/docs/installation for installing in your environment.
-
+### 2. Run Simulation
+Run this command from the `mindchain-cre` root:
 ```bash
-cd <workflow-name> && bun install
+cre workflow simulate ai-agent --target production-settings --non-interactive --trigger-index 0 --http-payload '{"action": "chat", "query":"Who are you?", "userAddress": "0x123", "paymentTxHash": "0xabc"}'
 ```
 
-Example: For a workflow directory named `hello-world` the command would be:
+> [!IMPORTANT]
+> **Secrets in Local Simulation**:
+> If the simulator fails to read `secrets.yaml`, we have implemented a **Fallback Mechanism** in `main.ts` (lines 130+).
+> Uncomment the fallback block and paste your key strictly for recording the demo video, then revert it before pushing.
 
-```bash
-cd hello-world && bun install
-```
+## 🛠️ Development
 
-## 3. Simulate the workflow
-
-Run the command from <b>project root directory</b>
-
-```bash
-cre workflow simulate <path-to-workflow-directory> --target=staging-settings
-```
-
-Example: For workflow named `hello-world` the command would be:
-
-```bash
-cre workflow simulate ./hello-world --target=staging-settings
-```
+To modify the workflow:
+1.  Edit `main.ts`.
+2.  Run `bun install` to update dependencies.
+3.  Simulate to test changes.

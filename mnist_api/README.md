@@ -1,46 +1,59 @@
-# Vision Node (MNIST API)
+# MindChain Vision Node (MNIST API) 👁️
 
-Specialized compute. Python muscle. TensorFlow brains. DePIN in action.
+A lightweight Python/Flask service that acts as a "Compute Node" for the MindChain network. It receives raw pixel data from the frontend, runs it through a TensorFlow/Keras model, and returns the predicted digit.
 
-## What This Does
+## 🧠 Features
 
-Acts as a "Compute Node" in the network. Receives raw pixels. Validates payment on-chain. Runs inference model. Returns digit prediction. Proves specialized hardware can be outsourced.
+- **TensorFlow Backend**: Runs a pre-trained CNN model for digit recognition.
+- **REST API**: Simple `POST /predict` endpoint used by the frontend.
+- **On-Chain Verification**: Designed to work in tandem with the Payment Gateway (validating that the request paid for compute).
 
-## Features
+## 🛠️ Tech Stack
 
-- **TensorFlow Backend**: Runs a pre-trained CNN model.
-- **On-Chain Auth**: Checks user credits before processing.
-- **Flask API**: Fast, lightweight REST endpoint.
+- **Python 3.9+**
+- **Flask**: Web Server
+- **TensorFlow (CPU)**: Inference Engine
+- **NumPy**: Data processing
 
-## Prerequisites
+## 🚀 Getting Started
 
-- Python 3.9+
-- Virtualenv
+### Prerequisites
+- Python 3.9 or higher
+- `pip`
 
-## Installation
+### Installation
+1. Navigate to the directory:
+   ```bash
+   cd mnist_api
+   ```
 
-Navigate to directory:
+2. Create a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+### Running the Node
+Start the server on port 3002:
+
 ```bash
-cd mnist_api
+python app.py
 ```
 
-Create virtual environment:
-```bash
-python -m venv .venv
-source .venv/bin/activate
+The server will start at `http://localhost:3002`.
+
+### API Usage
+**Endpoint**: `POST /predict`
+**Body**: 28x28 matrix of pixel values (0-1 floats or 0-255 ints).
+**Response**:
+```json
+{
+  "prediction": 7,
+  "confidence": 0.99
+}
 ```
-
-Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## Running the Node
-
-Start the server:
-```bash
-export FLASK_APP=app.py
-flask run --port 3002
-```
-
-Server runs on `http://localhost:3002`. Accepts POST requests to `/predict`.

@@ -57,7 +57,7 @@ export function KnowledgeShare() {
                 address: KNOWLEDGE_SHARE_ADDRESS,
                 abi: KNOWLEDGE_SHARE_ABI,
                 functionName: 'submitKnowledge',
-                args: [cid, description, parseEther(price)],
+                args: [cid, description, BigInt(0)], // Price hardcoded to 0 (Free for now)
             })
             setTxHash(tx)
         } catch (error) {
@@ -94,6 +94,7 @@ export function KnowledgeShare() {
                             placeholder="Paste your knowledge content here..."
                         />
                     </div>
+                    {/* Price Input Hidden for Hackathon 
                     <div>
                         <label className="block text-sm font-medium text-gray-300 mb-1">Price (ETH)</label>
                         <input
@@ -104,11 +105,12 @@ export function KnowledgeShare() {
                             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                         />
                     </div>
+                    */}
 
                     <button
                         type="submit"
                         disabled={!address || !description || uploading || isConfirming}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all disabled:opacity-50"
+                        className="w-full px-6 py-3 bg-linear-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-lg transition-all disabled:opacity-50"
                     >
                         {uploading ? 'Uploading to IPFS...' : isConfirming ? 'Confirming...' : 'Submit to Chain'}
                     </button>
