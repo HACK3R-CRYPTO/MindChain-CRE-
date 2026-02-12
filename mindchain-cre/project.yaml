@@ -36,5 +36,5 @@ production-settings:
   rpcs:
     - chain-name: ethereum-testnet-sepolia
       url: https://ethereum-sepolia-rpc.publicnode.com
-    - chain-name: ethereum-testnet-sepolia
+    - chain-name: base-testnet-sepolia
       url: https://sepolia.base.org

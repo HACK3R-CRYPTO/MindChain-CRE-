@@ -158,19 +158,88 @@ export function MNISTCanvas() {
             const ctx = canvas.getContext('2d')
             if (!ctx) throw new Error('Canvas context not available')
 
-            // Get image data and downsample to 28x28
+            // 1. Find Bounding Box
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const data = imageData.data
+            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0
+            let hasContent = false
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const alpha = data[(y * canvas.width + x) * 4 + 3] // Check alpha or RGB
+                    const red = data[(y * canvas.width + x) * 4]
+                    if (red > 50) { // Threshold for "white" pixel
+                        if (x < minX) minX = x
+                        if (x > maxX) maxX = x
+                        if (y < minY) minY = y
+                        if (y > maxY) maxY = y
+                        hasContent = true
+                    }
+                }
+            }
+
+            if (!hasContent) {
+                setError("Please draw a digit first!")
+                setIsLoading(false)
+                return
+            }
+
+            // 2. Crop and Center into temporary 20x20 box (MNIST style)
+            const w = maxX - minX
+            const h = maxY - minY
+            const size = Math.max(w, h)
+
+            // Create temp canvas for the cropped digit
+            const tempCanvas = document.createElement('canvas')
+            tempCanvas.width = 20
+            tempCanvas.height = 20
+            const tempCtx = tempCanvas.getContext('2d')
+            if (!tempCtx) throw new Error('Temp canvas context failed')
+
+            // Draw centered in 20x20
+            const scale = 20 / size
+            const offsetX = (20 - w * scale) / 2
+            const offsetY = (20 - h * scale) / 2
+
+            tempCtx.drawImage(
+                canvas,
+                minX, minY, w, h,
+                offsetX, offsetY, w * scale, h * scale
+            )
+
+            // 3. Place 20x20 into center of 28x28 (Final MNIST format)
+            const finalCanvas = document.createElement('canvas')
+            finalCanvas.width = 28
+            finalCanvas.height = 28
+            const finalCtx = finalCanvas.getContext('2d')
+            if (!finalCtx) throw new Error('Final canvas context failed')
+
+            // Black background
+            finalCtx.fillStyle = 'black'
+            finalCtx.fillRect(0, 0, 28, 28)
+
+            // Draw 20x20 in center (offset 4,4)
+            finalCtx.drawImage(tempCanvas, 4, 4)
+
+            // 4. Extract Grayscale Matrix
+            const finalData = finalCtx.getImageData(0, 0, 28, 28).data
             const downsampled: number[][] = []
+
+            // Debug Visualization (Optional: Log localized ASCII art)
+            let debugArt = ""
 
             for (let i = 0; i < 28; i++) {
                 downsampled[i] = []
                 for (let j = 0; j < 28; j++) {
-                    const x = Math.floor((j / 28) * canvas.width)
-                    const y = Math.floor((i / 28) * canvas.height)
-                    const idx = (y * canvas.width + x) * 4
-                    downsampled[i][j] = imageData.data[idx] / 255
+                    // Start of pixel in flattened array
+                    // R=0, G=1, B=2, A=3. We wrote to 'white' on 'black', so checking R is sufficient.
+                    const val = finalData[(i * 28 + j) * 4] / 255
+                    downsampled[i][j] = val
+                    debugArt += val > 0.5 ? "1" : "0"
                 }
+                debugArt += "\n"
             }
+            console.log("Input Matrix:\n" + debugArt)
 
             setPaymentStatus('Requesting prediction...')
 

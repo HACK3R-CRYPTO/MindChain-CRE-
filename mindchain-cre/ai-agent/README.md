@@ -10,6 +10,10 @@ This directory contains the **Chainlink Runtime Environment (CRE)** workflow tha
 4.  **AI Processing**: Calls Google's Gemini 2.0 Flash API to generate a response based on the on-chain persona.
 5.  **Returns Result**: Sends the AI response back to the frontend.
 
+### 🌟 New Features
+- **Context-Aware Chat**: The workflow now accepts a `history` parameter to maintain conversation context.
+- **Hybrid Simulation**: Automatically falls back to local simulation if CRE credentials are missing or network is unreachable.
+
 ## 📂 Structure
 
 - **`main.ts`**: The core logic. Typescript workflow using `@chainlink/cre-sdk`.

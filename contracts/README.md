@@ -55,7 +55,8 @@ npx hardhat test
 ```
 
 ## 📍 Deployed Addresses (Base Sepolia)
-| Contract | Address |
-|----------|---------|
-| AgentRegistry | `0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514` |
-| PaymentGateway | `0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519` |
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| AgentRegistry | `0x0Cd8459F4cAc09517392896639938dDA01dD6fd9` | [View](https://sepolia.basescan.org/address/0x0Cd8459F4cAc09517392896639938dDA01dD6fd9) |
+| PaymentGateway | `0xa6f0e4027F97B448369463288c46436D3DaD6b24` | [View](https://sepolia.basescan.org/address/0xa6f0e4027F97B448369463288c46436D3DaD6b24) |
+| KnowledgeShare | `0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2` | [View](https://sepolia.basescan.org/address/0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2) |

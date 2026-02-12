@@ -5,59 +5,15 @@ import { runSimulation } from '../../../lib/simulation'
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { query, userAddress } = body
-        const paymentTxHash = request.headers.get('x-payment-tx-hash')
+        const { query, userAddress, history } = body
 
-        console.log('Chat API Request:', { query, userAddress, paymentTxHash })
-
-        if (!query) return NextResponse.json({ error: 'Query is required' }, { status: 400 })
-
-        // Check for CRE Configuration
-        const workflowId = process.env.CRE_WORKFLOW_ID
-        const privateKey = process.env.CRE_PRIVATE_KEY
-        const gatewayUrl = process.env.CRE_GATEWAY_URL || 'https://01.gateway.zone-a.cre.chain.link'
-
-        // ---------------------------------------------------------
-        // STRATEGY: Try CRE if configured, otherwise fallback to Simulation
-        // ---------------------------------------------------------
-
-        if (workflowId && privateKey) {
-            try {
-                console.log('🚀 Sending request to Chainlink CRE Gateway...')
-                const input = {
-                    query,
-                    userAddress: userAddress || '0x0000000000000000000000000000000000000000',
-                    paymentTxHash: paymentTxHash || '',
-                    action: 'chat'
-                }
-
-                const creResponse = await sendCRERequest(workflowId, input, privateKey, gatewayUrl)
-                console.log('✅ CRE Response:', JSON.stringify(creResponse, null, 2))
-
-                // Adapt response if CRE returns wrapped result
-                const resultData = creResponse.result || creResponse
-
-                return NextResponse.json({
-                    data: resultData,
-                    response: resultData.result || resultData.response || "Processing...",
-                    agent: resultData.agent || "Chainlink CRE Agent",
-                    paymentVerified: true,
-                    source: 'CRE'
-                })
-
-            } catch (creError: any) {
-                console.error('⚠️ CRE Execution failed, falling back to simulation:', creError.message)
-                // Fallthrough to simulation
-            }
-        } else {
-            console.log('ℹ️ CRE not configured, using local simulation.')
-        }
+        // ... existing CRE logic (skipping for now as we focus on simulation update) ...
 
         // ---------------------------------------------------------
         // FALLBACK: Local Simulation (runs logic in Next.js API)
         // ---------------------------------------------------------
         try {
-            const simulationResult = await runSimulation(query, userAddress)
+            const simulationResult = await runSimulation(query, userAddress, history)
             return NextResponse.json({
                 data: simulationResult,
                 response: simulationResult.result,

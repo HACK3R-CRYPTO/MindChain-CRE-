@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { parseEther, formatEther } from 'viem'
-import { uploadJSONToIPFS, getIPFSUrl } from '@/lib/ipfs'
+import { uploadJSONToIPFS, getIPFSUrl, getFromIPFS } from '@/lib/ipfs'
 import { KNOWLEDGE_SHARE_ABI } from '@/lib/abis'
 
 const KNOWLEDGE_SHARE_ADDRESS = process.env.NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS as `0x${string}`
@@ -136,29 +136,106 @@ export function KnowledgeShare() {
 }
 
 function KnowledgeItemCard({ cid }: { cid: string }) {
-    const { data: item } = useReadContract({
+    const { data: item, refetch } = useReadContract({
         address: KNOWLEDGE_SHARE_ADDRESS,
         abi: KNOWLEDGE_SHARE_ABI,
         functionName: 'getKnowledge',
         args: [cid],
-    }) as { data: KnowledgeItem | undefined }
+    }) as { data: KnowledgeItem | undefined, refetch: () => void }
+
+
+
+    const { writeContractAsync } = useWriteContract()
+    const { address } = useAccount()
+    const [voting, setVoting] = useState(false)
+    const [content, setContent] = useState<string | null>(null)
+    const [loadingContent, setLoadingContent] = useState(false)
+
+    useEffect(() => {
+        if (!cid) return
+        const fetchContent = async () => {
+            setLoadingContent(true)
+            try {
+                const data = await getFromIPFS(cid)
+                if (data && typeof data === 'object' && data.content) {
+                    setContent(data.content)
+                } else {
+                    // If it's just raw text or other JSON
+                    setContent(typeof data === 'string' ? data : JSON.stringify(data))
+                }
+            } catch (e) {
+                setContent('(Failed to load IPFS content)')
+            } finally {
+                setLoadingContent(false)
+            }
+        }
+        fetchContent()
+    }, [cid])
+
+    const handleVote = async () => {
+        if (!address) return
+        setVoting(true)
+        try {
+            await writeContractAsync({
+                address: KNOWLEDGE_SHARE_ADDRESS,
+                abi: KNOWLEDGE_SHARE_ABI,
+                functionName: 'vote',
+                args: [cid],
+            })
+            // Wait a moment for indexing (optional but helpful) then refetch
+            setTimeout(() => refetch(), 2000)
+            alert('Vote Submitted! Refreshing...')
+        } catch (error: any) {
+            console.error('Vote failed:', error)
+            alert(error.message || 'Vote failed')
+        } finally {
+            setVoting(false)
+        }
+    }
 
     if (!item) return <div className="animate-pulse bg-gray-800 h-24 rounded-lg"></div>
 
+    const isOwner = address && item.owner.toLowerCase() === address.toLowerCase()
+
     return (
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-blue-500/50 transition-colors">
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-purple-500/50 transition-colors">
             <div className="flex justify-between items-start mb-2">
                 <h4 className="font-bold text-white">{item.description}</h4>
-                <span className={`px-2 py-0.5 text-xs rounded-full ${item.status === 1 ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>
-                    {item.status === 1 ? 'Verified' : 'Pending'}
-                </span>
+                <div className="flex gap-2">
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${item.status === 1 ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>
+                        {item.status === 1 ? 'Verified' : 'Pending'}
+                    </span>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-900 text-blue-300">
+                        Votes: {item.voteCount.toString()}/3
+                    </span>
+                </div>
             </div>
             <p className="text-sm text-gray-400 mb-3 truncate">CID: {cid}</p>
-            <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-400">Owner: {item.owner.slice(0, 6)}...{item.owner.slice(-4)}</span>
-                <span className="text-white font-mono">{formatEther(item.price)} ETH</span>
+
+            <div className="bg-gray-900 rounded p-2 mb-3 text-xs text-gray-300 max-h-20 overflow-y-auto">
+                {loadingContent ? (
+                    <span className="animate-pulse">Loading from IPFS...</span>
+                ) : content ? (
+                    <p className="whitespace-pre-wrap">{content}</p>
+                ) : (
+                    <span className="text-gray-500">(Content stored on IPFS)</span>
+                )}
             </div>
-            {/* Purchase Logic would go here */}
+
+            <div className="flex justify-between items-center text-sm">
+                <span className="text-blue-400 text-xs">Owner: {item.owner.slice(0, 6)}...{item.owner.slice(-4)}</span>
+
+                {item.status === 0 && (
+                    <button
+                        onClick={handleVote}
+                        disabled={!address || isOwner || voting}
+                        className="px-3 py-1 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white text-xs transition-colors"
+                        title={isOwner ? "Cannot vote on own submission" : "Vote to verify this knowledge"}
+                    >
+                        {voting ? 'Voting...' : isOwner ? 'Your Post' : 'Vote to Verify'}
+                    </button>
+                )}
+            </div>
         </div>
     )
 }

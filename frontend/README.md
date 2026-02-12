@@ -4,11 +4,11 @@ The user interface for the **MindChain CRE** platform, built with **Next.js 14**
 
 ## ✨ Features
 
-- **Connect Wallet**: Integrated with RainbowKit/Wagmi for Base Sepolia.
-- **MNIST Canvas**: Draw digits and submit them for AI prediction (with on-chain payment).
-- **Agent Registry**: Interact with the ERC-8004 contract to register identities.
-- **Knowledge Share**: Upload knowledge to IPFS and submit to the blockchain.
-- **AI Chat**: Pay-per-use chat interface integrated with Chainlink CRE via Next.js API routes.
+- **Connect Wallet**: Integrated with RainbowKit/Wagmi for **Base Sepolia**.
+- **MNIST Canvas**: Draw digits and get AI predictions (integrated python API).
+- **Agent Registry**: Register on-chain identities (ERC-8004) with reputation tracking.
+- **Knowledge Share**: Submit IPFS-backed knowledge to the blockchain and vote on it.
+- **AI Chat**: Context-aware AI assistant with **History Memory** and **Verified Knowledge** access.
 
 ## 🛠️ Tech Stack
 
@@ -36,8 +36,8 @@ NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_project_id
 
 # Deployed Contract Addresses (Base Sepolia)
 NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS=0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514
-NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS=0x6AE46C7Ec04d72E7e14268e59Cdfb639f5b68519
-NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS=0x... # (Update after deployment)
+NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS=0xa6f0e4027F97B448369463288c46436D3DaD6b24
+NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS=0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2
 NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 ```
 

@@ -81,7 +81,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="text-3xl">🧠</div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 MindChain CRE
               </h1>
               <p className="text-xs text-gray-400">Powered by Chainlink Runtime Environment</p>
@@ -135,7 +135,7 @@ export default function Home() {
           <button
             onClick={() => setActiveTab('chat')}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'chat'
-              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+              ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >
@@ -153,7 +153,7 @@ export default function Home() {
               <MNISTCanvas />
 
               {prediction && (
-                <div className="mt-6 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg">
+                <div className="mt-6 p-4 bg-linear-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg">
                   <p className="text-white text-lg">
                     <span className="font-semibold">Prediction:</span> {prediction.digit}
                   </p>

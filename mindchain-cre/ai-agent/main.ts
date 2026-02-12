@@ -46,10 +46,10 @@ const getAgentIdentity = async (runtime: Runtime<Config>, userAddress: string): 
     // But let's try the standard pattern first.
 
     // Fallback: simple fetch to RPC if SDK capability is complex to mock here
-    const rpcUrl = "https://sepolia-rollup.arbitrum.io/rpc" // Hardcoded for reliability in this specific step
 
     // We will simulate the call for this step to ensure compilation, 
     // real implementation would use ethers or similar library which might not be in this specific container
+    const rpcUrl = "https://sepolia.base.org" // Base Sepolia RPC
     // or the specific CRE EVM capability.
 
     // For the purpose of this hackathon demo, we will return a mock agent if the call is too complex without ethers

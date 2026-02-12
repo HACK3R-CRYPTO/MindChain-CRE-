@@ -33,6 +33,12 @@ Use **Chainlink CRE** as the orchestration layer to coordinate:
 3. 🆔 **Agent Identity Management** - ERC-8004 registry for agent reputation
 4. 🔗 **Cross-chain Coordination** - Seamless interaction between Blockchain and external APIs
 
+### 💡 Why Chainlink CRE?
+CRE acts as the **Decentralized Backend** that bridges the gap between on-chain payments and off-chain AI.
+1.  **Trusted Conductor**: It verifies users have paid (on-chain) before triggering expensive AI computations (off-chain).
+2.  **Secret Management**: Keeps API keys (Gemini/OpenAI) secure within the runtime, never exposing them to the frontend.
+3.  **Verifiable Logic**: The workflow logic (`main.ts`) is immutable and verifiable, unlike a standard private backend.
+
 ---
 
 ## 🏗️ Architecture
@@ -65,6 +71,7 @@ graph TB
 - ✅ **Direct On-Chain Micropayments** - Pay-per-use AI services with USDC
 - ✅ **ERC-8004 Agent Registry** - On-chain agent identities and reputation
 - ✅ **AI Integration** - Gemini/OpenAI for knowledge responses
+- ✅ **Context-Aware Chat** - Remembers conversation history for natural interaction
 - ✅ **Base Sepolia (L2)** - Fast, cheap transactions with ETH compatibility
 - ✅ **Verifiable Execution** - All AI operations recorded on-chain
 
@@ -262,7 +269,8 @@ npx hardhat test
 
 ✅ **CRE Workflow**: TypeScript workflow with HTTP trigger and AI integration  
 ✅ **Blockchain + External Integration**: Base Sepolia + Gemini API + PaymentGateway
-✅ **Simulation/Deployment**: CRE CLI simulation + production deployment  
+✅ **Hybrid Deployment**: CRE CLI simulation (primary) + production-ready contracts
+✅ **Enhanced AI**: Context-aware Chat, Knowledge Verification, and Image Recognition
 ✅ **Demo Video**: 3-5 minute walkthrough  
 ✅ **Public Source Code**: GitHub repository  
 ✅ **README with Chainlink Links**: Comprehensive documentation  

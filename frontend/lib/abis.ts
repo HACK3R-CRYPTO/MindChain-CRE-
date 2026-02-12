@@ -103,6 +103,13 @@ export const KNOWLEDGE_SHARE_ABI = [
     },
     {
         "inputs": [{ "internalType": "string", "name": "_cid", "type": "string" }],
+        "name": "vote",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "string", "name": "_cid", "type": "string" }],
         "name": "purchaseAccess",
         "outputs": [],
         "stateMutability": "payable",

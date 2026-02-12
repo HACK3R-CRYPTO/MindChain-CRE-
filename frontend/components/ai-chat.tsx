@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseEther, keccak256, toHex, parseUnits } from 'viem'
+import { useState, useRef, useEffect, FormEvent } from 'react'
+import { useAccount, useWriteContract } from 'wagmi'
+import { parseUnits, keccak256, toHex } from 'viem'
 import { IERC20_ABI, PAYMENT_GATEWAY_ABI } from '@/lib/abis'
 
 const PAYMENT_GATEWAY_ADDRESS = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS as `0x${string}`
@@ -13,6 +13,7 @@ interface Message {
     role: 'user' | 'assistant'
     content: string
     timestamp: Date
+    source?: 'CRE' | 'SIMULATION'
 }
 
 export function AIChat() {
@@ -30,7 +31,7 @@ export function AIChat() {
 
     const { writeContractAsync } = useWriteContract()
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
         if (!input.trim() || !address) return
 
@@ -84,6 +85,7 @@ export function AIChat() {
                 body: JSON.stringify({
                     query: userMessage.content,
                     userAddress: address,
+                    history: messages
                 }),
             })
 
@@ -93,6 +95,7 @@ export function AIChat() {
                 role: 'assistant',
                 content: data.response || data.result || 'Sorry, I encountered an error.',
                 timestamp: new Date(),
+                source: data.source
             }
 
             setMessages((prev) => [...prev, assistantMessage])
@@ -125,18 +128,29 @@ export function AIChat() {
                     messages.map((message, index) => (
                         <div
                             key={index}
-                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}
                         >
                             <div
                                 className={`max-w-[80%] px-4 py-3 rounded-lg ${message.role === 'user'
-                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                                    ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white'
                                     : 'bg-gray-800 text-gray-100'
                                     }`}
                             >
                                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                                <p className="text-xs opacity-70 mt-1">
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-1 px-1">
+                                <span className="text-xs text-gray-500">
                                     {message.timestamp.toLocaleTimeString()}
-                                </p>
+                                </span>
+                                {message.source && (
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${message.source === 'CRE'
+                                        ? 'border-green-500 text-green-400 bg-green-900/20'
+                                        : 'border-yellow-500 text-yellow-400 bg-yellow-900/20'
+                                        }`}>
+                                        {message.source === 'CRE' ? '🔒 CRE Verified' : '⚡ Simulation'}
+                                    </span>
+                                )}
                             </div>
                         </div>
                     ))
@@ -172,7 +186,7 @@ export function AIChat() {
                     <button
                         type="submit"
                         disabled={!address || !input.trim() || isLoading}
-                        className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+                        className="px-6 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
                     >
                         {isLoading ? 'Processing...' : 'Send (0.01 USDC)'}
                     </button>
