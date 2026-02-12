@@ -30,6 +30,7 @@ export function AIChat() {
     }, [messages])
 
     const { writeContractAsync } = useWriteContract()
+    const publicClient = usePublicClient()
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
@@ -70,7 +71,7 @@ export function AIChat() {
 
             setStatus('Waiting for payment confirmation...')
             // STRICT VERIFICATION: Wait for transaction to be mined
-            const publicClient = usePublicClient()
+            // STRICT VERIFICATION: Wait for transaction to be mined
             if (!publicClient) throw new Error('Public client not available')
 
             const receipt = await publicClient.waitForTransactionReceipt({ hash: tx })

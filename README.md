@@ -13,12 +13,22 @@
 
 ## 🎯 Overview
 
-**MindChain CRE** is a decentralized AI knowledge platform that demonstrates how **Chainlink Runtime Environment (CRE)** can orchestrate complex AI workflows combining:
-- � **MNIST Digit Recognition** - Draw digits and get AI predictions
-- 📚 **Community Knowledge Sharing** - Submit and vote on knowledge
-- 💬 **AI Chat Assistant** - Powered by Gemini API
-- 🆔 **Agent Identity System** - ERC-8004 on-chain reputation
-- 💰 **x402 Micropayments** - Pay-per-use with USDC
+**MindChain CRE** is a composable playground where agents build **ERC-8004 Identity**, purchase usage credits (**x402**), and **power Heterogeneous AI Compute (Vision & Text)** with **verifiable, community-owned knowledge**—orchestrated by **Chainlink CRE**.
+
+It demonstrates how **Chainlink Runtime Environment (CRE)** can orchestrate complex AI workflows including:
+-  **Vision Node (MNIST)** - Specialized Python compute for image recognition
+- 📚 **Community Knowledge** - Verifiable, community-owned data
+- 💬 **Text Node (Chat)** - General purpose LLM (Gemini)
+- 🆔 **Context-Aware Chat** - Personalized AI memory per user (session history)
+- 💰 **x402 Micropayments** - Pay-per-use with USDC (Seamless onboarding)
+
+### 🧠 Universal Compute Orchestration
+
+MindChain demonstrates that Chainlink CRE can orchestrate **any** type of off-chain compute, not just LLMs.
+*   **Vision Node (MNIST Demo)**: Proves the network can handle **Specialized Compute** (Python/TensorFlow) for specific tasks like **digit recognition (0-9)**.
+*   **Text Node (Chat Demo)**: Proves the network can handle **General Purpose Compute** (LLMs) for knowledge retrieval.
+
+This proves that MindChain is a **Universal Compute Orchestrator**.
 
 ### The Problem
 - AI agents lack verifiable identities and reputation systems
@@ -52,7 +62,10 @@ graph TB
     
     CRE -->|6. Verify Payment| PaymentGateway[PaymentGateway Contract]
     CRE -->|7. Get Agent Identity| AgentRegistry[AgentRegistry ERC-8004]
-    CRE -->|8. AI Query| Gemini[Gemini API]
+    
+    CRE -.->|8a. Text Query| Gemini[Text Node (LLM)]
+    CRE -.->|8b. Image Query| VisionNode[Vision Node (Python)]
+    
     CRE -->|9. Update Reputation| AgentRegistry
     CRE -->|10. Response| Frontend
     
@@ -67,13 +80,14 @@ graph TB
 
 ## ✨ Key Features
 
-- ✅ **Chainlink CRE Orchestration** - TypeScript workflows with HTTP triggers and AI integration
-- ✅ **Direct On-Chain Micropayments** - Pay-per-use AI services with USDC
-- ✅ **ERC-8004 Agent Registry** - On-chain agent identities and reputation
-- ✅ **AI Integration** - Gemini/OpenAI for knowledge responses
-- ✅ **Context-Aware Chat** - Remembers conversation history for natural interaction
-- ✅ **Base Sepolia (L2)** - Fast, cheap transactions with ETH compatibility
-- ✅ **Verifiable Execution** - All AI operations recorded on-chain
+- ✅ **Universal Compute Orchestration** - Chainlink CRE orchestrating both Vision (Python) and Text (LLM) Nodes.
+- ✅ **Heterogeneous AI** - Vision Nodes (MNIST) and Text Nodes (Gemini) working in parallel.
+- ✅ **Resilient Architecture** - Full Simulation Fallback for reliable, glitch-free demos.
+- ✅ **Direct On-Chain Micropayments** - Pay-per-use AI services with USDC.
+- ✅ **ERC-8004 Agent Registry** - On-chain agent identities and reputation.
+- ✅ **Context-Aware Chat** - Remembers conversation history for natural interaction with knowledge.
+- ✅ **Base Sepolia (L2)** - Fast, cheap transactions with ETH compatibility.
+- ✅ **Verifiable Execution** - All AI operations recorded on-chain.
 
 ---
 

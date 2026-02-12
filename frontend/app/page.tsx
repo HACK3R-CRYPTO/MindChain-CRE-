@@ -11,7 +11,7 @@ import PaymentModal from '@/components/payment-modal'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
-  const [activeTab, setActiveTab] = useState<'mnist' | 'knowledge' | 'chat' | 'registry'>('mnist')
+  const [activeTab, setActiveTab] = useState<'mnist' | 'knowledge' | 'chat' | 'registry'>('chat')
   const [prediction, setPrediction] = useState<{ digit: number; confidence: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
@@ -91,28 +91,51 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="py-12 text-center">
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent">
-          Decentralized AI Knowledge Platform
-        </h2>
-        <p className="text-gray-300 text-lg max-w-2xl mx-auto px-4">
-          AI agents with verifiable identities (ERC-8004), micropayments (x402), and Chainlink workflows,
-          all orchestrated by Chainlink CRE with x402 micropayments
-        </p>
+
+      {/* Hero Section (One Column, Centered) */}
+      <section className="container mx-auto px-4 py-20 relative text-center">
+        <div className="absolute inset-0 flex justify-center">
+          <div className="w-[60%] h-[60%] rounded-full bg-purple-500/10 blur-[120px]" />
+        </div>
+
+        <div className="relative z-10 max-w-4xl mx-auto space-y-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-900/20 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-purple-300">
+            ⚡ LIVE ON BASE SEPOLIA
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-black text-white leading-tight">
+            Build & gate AI experiences <span className="bg-linear-to-r from-sky-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">on-chain</span>
+          </h1>
+
+          MindChain CRE is a composable playground where agents build <strong>ERC-8004 Identity</strong>, purchase usage credits (<strong>x402</strong>), and <strong>power Heterogeneous AI Compute (Vision & Text)</strong> with <strong>verifiable, community-owned knowledge</strong> orchestrated by <strong>Chainlink CRE</strong>.
+
+          <div className="flex justify-center gap-4 pt-4">
+            <button
+              onClick={() => setActiveTab('mnist')}
+              className="px-8 py-4 bg-white text-gray-900 rounded-full font-bold hover:bg-gray-200 transition-all flex items-center gap-2 transform hover:scale-105"
+            >
+              🎨 Try Demo
+            </button>
+            <button
+              onClick={() => window.open('https://github.com/StartInBlockchain/MindChain', '_blank')}
+              className="px-8 py-4 border border-white/20 hover:bg-white/10 rounded-full font-bold text-white transition-all flex items-center gap-2 transform hover:scale-105"
+            >
+              📜 View Contracts
+            </button>
+          </div>
+        </div>
       </section>
 
-      {/* Tabs */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-2 mb-8 justify-center flex-wrap">
           <button
-            onClick={() => setActiveTab('mnist')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'mnist'
+            onClick={() => setActiveTab('chat')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'chat'
               ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >
-            🎨 MNIST Drawing
+            💬 AI Chat
           </button>
           <button
             onClick={() => setActiveTab('knowledge')}
@@ -133,13 +156,13 @@ export default function Home() {
             🤖 Agent Registry
           </button>
           <button
-            onClick={() => setActiveTab('chat')}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'chat'
+            onClick={() => setActiveTab('mnist')}
+            className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'mnist'
               ? 'bg-linear-to-r from-purple-600 to-pink-600 text-white shadow-lg'
               : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
               }`}
           >
-            💬 AI Chat
+            🎨 MNIST Drawing
           </button>
         </div>
 

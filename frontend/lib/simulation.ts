@@ -1,5 +1,6 @@
 import { createPublicClient, http, defineChain } from 'viem'
 import { baseSepolia } from 'viem/chains'
+import { getFromIPFS } from './ipfs'
 
 // Agent Registry ABI (Partial)
 const AGENT_REGISTRY_ABI = [
@@ -114,9 +115,21 @@ export async function runSimulation(query: string, userAddress: string, history:
                             functionName: 'getKnowledge',
                             args: [cid]
                         }) as any
+
+                        let content = "Loading..."
+                        if (item.status === 1) { // Only fetch heavy content if VERIFIED
+                            const data = await getFromIPFS(cid)
+                            if (data && data.content) {
+                                content = data.content
+                            } else {
+                                content = "Content not available or invalid format."
+                            }
+                        }
+
                         return {
                             desc: item.description,
-                            status: item.status // 0: Pending, 1: Verified, 2: Rejected
+                            status: item.status, // 0: Pending, 1: Verified, 2: Rejected
+                            content: content
                         }
                     } catch (err) {
                         return null
@@ -124,14 +137,17 @@ export async function runSimulation(query: string, userAddress: string, history:
                 }))
 
                 const validItems = items.filter(i => i !== null)
-                const verified = validItems.filter(i => i.status === 1).map(i => `- ${i.desc}`)
+                const verified = validItems
+                    .filter(i => i.status === 1)
+                    .map(i => `TOPIC: ${i.desc}\nDETAILS: ${i.content}`)
+
                 // In MindChain, pending knowledge is completely ignored until verified.
                 // This forces the AI to say "I don't know" or rely on general knowledge.
 
                 knowledgeContext = ""
 
                 if (verified.length > 0) {
-                    knowledgeContext += `✅ VERIFIED KNOWLEDGE (TRUE FACTS):\n${verified.join('\n')}\n\n`
+                    knowledgeContext += `✅ VERIFIED KNOWLEDGE (TRUE FACTS):\n${verified.join('\n\n')}\n\n`
                 } else {
                     knowledgeContext = "No verified knowledge items found."
                 }
