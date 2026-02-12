@@ -60,11 +60,11 @@ graph TB
     Frontend -->|3. Record Payment| PaymentGateway[PaymentGateway Contract]
     Frontend -->|4. Query + TxHash| CRE[Chainlink CRE Workflow]
     
-    CRE -->|6. Verify Payment| PaymentGateway[PaymentGateway Contract]
-    CRE -->|7. Get Agent Identity| AgentRegistry[AgentRegistry ERC-8004]
+    CRE -->|6. Verify Payment| PaymentGateway["PaymentGateway Contract"]
+    CRE -->|7. Get Agent Identity| AgentRegistry["AgentRegistry ERC-8004"]
     
-    CRE -.->|8a. Text Query| Gemini[Text Node (LLM)]
-    CRE -.->|8b. Image Query| VisionNode[Vision Node (Python)]
+    CRE -.->|8a. Text Query| Gemini["Text Node (LLM)"]
+    CRE -.->|8b. Image Query| VisionNode["Vision Node (Python)"]
     
     CRE -->|9. Update Reputation| AgentRegistry
     CRE -->|10. Response| Frontend
