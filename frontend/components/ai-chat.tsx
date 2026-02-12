@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
-import { useAccount, useWriteContract } from 'wagmi'
+import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
 import { parseUnits, keccak256, toHex } from 'viem'
 import { IERC20_ABI, PAYMENT_GATEWAY_ABI } from '@/lib/abis'
 
@@ -69,9 +69,17 @@ export function AIChat() {
             })
 
             setStatus('Waiting for payment confirmation...')
-            // We could use useWaitForTransactionReceipt here but for speed/UX we might optimistically proceed
-            // or wait a bit. Let's wait for basic confirmation or just proceed to API call.
-            // For strict correctness, we'd wait. For hackathon speed, we proceed.
+            // STRICT VERIFICATION: Wait for transaction to be mined
+            const publicClient = usePublicClient()
+            if (!publicClient) throw new Error('Public client not available')
+
+            const receipt = await publicClient.waitForTransactionReceipt({ hash: tx })
+
+            if (receipt.status !== 'success') {
+                throw new Error('Payment transaction failed on-chain')
+            }
+
+            setStatus('Payment confirmed! Thinking...')
 
             setStatus('Thinking...')
 
