@@ -103,7 +103,7 @@ export default function Home() {
             ⚡ LIVE ON BASE SEPOLIA
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black text-white leading-tight">
+          <h1 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter text-white drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">
             Build & gate AI experiences <span className="bg-linear-to-r from-sky-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">on-chain</span>
           </h1>
 
