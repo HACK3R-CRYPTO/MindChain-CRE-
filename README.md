@@ -57,17 +57,17 @@ CRE acts as the **Decentralized Backend** that bridges the gap between on-chain 
 graph TB
     User[User/AI Agent] -->|1. Query + Payment| Frontend[Next.js Frontend]
     Frontend -->|2. Approve USDC| BaseSepolia[Base Sepolia]
-    Frontend -->|3. Record Payment| PaymentGateway[PaymentGateway Contract]
-    Frontend -->|4. Query + TxHash| CRE[Chainlink CRE Workflow]
+    Frontend -->|3. Record Payment| PaymentGateway["PaymentGateway Contract"]
+    Frontend -->|4. Trigger CRE Workflow| CRE[Chainlink CRE Workflow]
     
-    CRE -->|6. Verify Payment| PaymentGateway["PaymentGateway Contract"]
-    CRE -->|7. Get Agent Identity| AgentRegistry["AgentRegistry ERC-8004"]
+    CRE -->|5. Verify Payment| PaymentGateway
+    CRE -->|6. Get Agent Identity| AgentRegistry["AgentRegistry ERC-8004"]
     
-    CRE -.->|8a. Text Query| Gemini["Text Node (LLM)"]
-    CRE -.->|8b. Image Query| VisionNode["Vision Node (Python)"]
+    CRE -.->|7a. Text Task| Gemini["Text Node (LLM)"]
+    CRE -.->|7b. Vision Task| VisionNode["Vision Node (Python)"]
     
-    CRE -->|9. Update Reputation| AgentRegistry
-    CRE -->|10. Response| Frontend
+    CRE -->|8. Update Reputation| AgentRegistry
+    CRE -->|9. Response| Frontend
     
     BaseSepolia -.->|Contains| PaymentGateway
     BaseSepolia -.->|Contains| AgentRegistry
