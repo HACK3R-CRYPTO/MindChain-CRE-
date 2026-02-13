@@ -69,3 +69,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.sublime-*
+
+# Documentation (Keep Local Only)
+DOCS_demo_script.md
