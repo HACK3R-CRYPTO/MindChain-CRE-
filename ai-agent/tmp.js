@@ -13768,38 +13768,29 @@ var sendErrorResponse = (error) => {
   hostBindings.sendResponse(payload);
 };
 var getAgentIdentity = async (runtime2, userAddress) => {
-  const agentRegistryABI = [
-    {
-      inputs: [{ name: "agent", type: "address" }],
-      name: "getAgentInfo",
-      outputs: [
-        { name: "tokenId", type: "uint256" },
-        { name: "name", type: "string" },
-        { name: "reputation", type: "int256" },
-        { name: "totalInteractions", type: "uint256" }
-      ],
-      stateMutability: "view",
-      type: "function"
-    }
-  ];
-  const rpcUrl = "https://sepolia.base.org";
   return {
-    tokenId: 1n,
-    name: "Agent Zero",
-    reputation: 100n,
-    totalInteractions: 50n
+    tokenId: 0n,
+    name: "Guest User",
+    reputation: 0n,
+    totalInteractions: 0n
   };
 };
-var callGeminiAI = async (runtime2, prompt, apiKey) => {
+async function callGeminiAI(runtime2, userPrompt, systemPrompt, apiKey, aiProviderUrl) {
   try {
     const httpClient = new ClientCapability;
+    const requestBody = {
+      contents: [{ parts: [{ text: userPrompt }] }]
+    };
+    if (systemPrompt) {
+      requestBody.systemInstruction = {
+        parts: [{ text: systemPrompt }]
+      };
+    }
     const request = {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      url: `${aiProviderUrl}?key=${apiKey}`,
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: new TextEncoder().encode(JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      }))
+      body: new TextEncoder().encode(JSON.stringify(requestBody))
     };
     const responseFn = httpClient.sendRequest(runtime2, request);
     const response = await responseFn.result();
@@ -13815,7 +13806,7 @@ var callGeminiAI = async (runtime2, prompt, apiKey) => {
     runtime2.log(`Gemini Error: ${e}`);
     return "Error connecting to AI brain.";
   }
-};
+}
 var onHttpTrigger = async (runtime2, payload) => {
   try {
     const inputString = typeof payload.input === "string" ? payload.input : new TextDecoder().decode(payload.input);
@@ -13829,17 +13820,31 @@ var onHttpTrigger = async (runtime2, payload) => {
     if (requestData.action === "chat" && requestData.query) {
       const systemPrompt = `You are MindChain, an AI Assistant on Base Sepolia.
             You are talking to an agent named ${agentInfo.name} (Reputation: ${agentInfo.reputation}).
-            Keep answers concise and helpful.`;
-      const fullPrompt = `${systemPrompt}
+            
+            ROLEPLAY RULES:
+            - You are an all-knowing assistant. NEVER say you don't have access to real-time data or have a training cutoff. 
+            - If you don't know the exact current news, provide the most relevant information you have from your training.
+            - Do NOT give disclaimers about being an AI.
 
-User: ${requestData.query}`;
+            KNOWLEDGE RULES:
+            1. PRIORITIZE Verified On-Chain Knowledge ONLY if it directly answers the user's core question.
+            2. NATURAL SOURCE DISTINCTION: You must let the user know the source without being robotic:
+               - If using Verified Knowledge: Lead with a phrase like "According to the verified Knowledge Share..." or "Our on-chain data confirms...". Let the response flow from this truth.
+               - If it's a General question: Clearly (but naturally) state that this is from your general training (e.g., "While this isn't in our verified database, based on my general intelligence...").
+            3. NEVER suggest or mention the on-chain knowledge (e.g., Treasure locations) if it doesn't relate to the user's current message.
+            4. Keep answers concise, premium, and professional.
+            5. Use Markdown (bold, lists) to keep responses readable and high-end.
+`;
       const geminiApiKey = runtime2.getSecret({ id: "GEMINI_API_KEY" }).result();
-      const apiKey = geminiApiKey.value;
-      if (!apiKey) {
+      const geminiModelUrl = runtime2.getSecret({ id: "GEMINI_MODEL_URL" }).result();
+      if (!geminiApiKey.value) {
         throw new Error("GEMINI_API_KEY not found. Ensure it is set in your secrets.yaml or environment.");
       }
+      if (!geminiModelUrl.value) {
+        throw new Error("GEMINI_MODEL_URL not found. Ensure it is set in your secrets.yaml or environment.");
+      }
       runtime2.log(`\uD83E\uDDE0 AI Brain Prompting with context...`);
-      const aiResponse = await callGeminiAI(runtime2, fullPrompt, apiKey);
+      const aiResponse = await callGeminiAI(runtime2, requestData.query, systemPrompt, geminiApiKey.value, geminiModelUrl.value);
       runtime2.log(`✨ AI Response Generated successfully`);
       return {
         status: "success",
