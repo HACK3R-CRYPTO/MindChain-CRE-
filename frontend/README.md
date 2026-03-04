@@ -8,7 +8,7 @@ The user interface for the **MindChain CRE** platform, built with **Next.js 14**
 - **MNIST Canvas**: Draw digits and get AI predictions (integrated python API).
 - **Agent Registry**: Register on-chain identities (ERC-8004) with reputation tracking.
 - **Knowledge Share**: Submit IPFS-backed knowledge to the blockchain and vote on it.
-- **AI Chat**: Context-aware AI assistant with **History Memory** and **Verified Knowledge** access.
+- **AI Chat**: Context-aware AI assistant with **History Memory**, **Verified Knowledge** access, and full **Markdown Rendering**.
 
 ## 🛠️ Tech Stack
 
@@ -16,6 +16,7 @@ The user interface for the **MindChain CRE** platform, built with **Next.js 14**
 - **Styling**: Tailwind CSS
 - **Web3**: wagmi, viem, TanStack Query
 - **IPFS**: Pinata SDK
+- **UI/UX**: `react-markdown`, `@tailwindcss/typography`
 
 ## 🚀 Getting Started
 
@@ -35,9 +36,9 @@ Create a `.env.local` file:
 NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_project_id
 
 # Deployed Contract Addresses (Base Sepolia)
-NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS=0x78A54d9Fcf0F0aB91fbeBdf722EFcC1039c98514
-NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS=0xa6f0e4027F97B448369463288c46436D3DaD6b24
-NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS=0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2
+NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS=0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63
+NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS=0xD7c2951C3eCE0aad1a4e8264107e34DCfbC4018B
+NEXT_PUBLIC_KNOWLEDGE_SHARE_ADDRESS=0xe3c4eF214ef36bEFb375D7D8A4782252B037e8C3
 NEXT_PUBLIC_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
 ```
 

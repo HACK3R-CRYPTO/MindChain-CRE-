@@ -215,7 +215,7 @@ export default function Home() {
       <footer className="mt-20 py-8 border-t border-purple-500/20 bg-gray-900/50">
         <div className="container mx-auto px-4 text-center text-gray-400">
           <p>Built with Chainlink CRE, ERC-8004, and x402 Protocol</p>
-          <p className="text-sm mt-2">Ethereum Sepolia Testnet</p>
+          <p className="text-sm mt-2">Base Sepolia Testnet</p>
         </div>
       </footer>
     </main>

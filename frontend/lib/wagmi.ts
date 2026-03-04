@@ -13,7 +13,7 @@ export const config = createConfig({
         safe(),
     ],
     transports: {
-        [baseSepolia.id]: http(),
+        [baseSepolia.id]: http('https://sepolia.base.org'),
         [sepolia.id]: http(),
     },
 })

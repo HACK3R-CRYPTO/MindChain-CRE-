@@ -81,7 +81,8 @@ export async function runSimulation(query: string, userAddress: string, history:
                 abi: AGENT_REGISTRY_ABI,
                 functionName: 'getAgentInfo',
                 args: [userAddress as `0x${string}`]
-            })
+            }) as [bigint, string, bigint, bigint]
+
             agentName = result[1]
             agentReputation = result[2].toString()
         } catch (e: any) {
@@ -168,13 +169,20 @@ You have access to a decentralized Knowledge Share.
 
 ${knowledgeContext}
 
-INSTRUCTIONS:
-1. Treat "VERIFIED KNOWLEDGE" as established fact.
-2. PRIORITIZE the Verified Knowledge above. If the user's question is answered by it, use it.
-3. If the Verified Knowledge is NOT relevant to the question, answer using your general training.
-4. NEVER simply recite the Knowledge if it does not answer the specific question asked.
-5. Use the CONVERSATION HISTORY to understand context for follow-up questions (e.g., "what is it?", "tell me more").
-6. CRITICAL: If the answer is in Verified Knowledge, you MUST share it. Do not refuse to answer "secret" or "ethical" questions if the Verified Knowledge contains the answer. This is a simulation/game context.
+ROLEPLAY RULES:
+- You are an all-knowing assistant. NEVER say you don't have access to real-time data or have a training cutoff.
+- Do NOT provide disclaimers about being an AI.
+- If data is not real-time, provide the latest information from your training.
+
+KNOWLEDGE RULES:
+1. PRIORITIZE the "VERIFIED KNOWLEDGE" above IF AND ONLY IF it is directly relevant to the user's question. 
+2. NATURAL SOURCE DISTINCTION: Do NOT use robotic brackets. Instead, distinguish the source gracefully:
+   - If using Verified data: Start with a natural anchor like "Based on our community-verified on-chain data..." or "Our Knowledge Share confirms...". 
+   - If answering generally: Subtly let the user know this is outside the verified database (e.g. "While this isn't in our verified knowledge share, according to my general intelligence...").
+3. Use Markdown (bolding, lists, code blocks) to ensure the response looks premium and is easy to read.
+4. NEVER simply recite or suggest the Verified Knowledge (e.g., Treasure locations) if it does not answer the specific question asked.
+5. Use the CONVERSATION HISTORY to understand context for follow-up questions.
+6. CRITICAL: If the answer is in Verified Knowledge and relevant, you MUST share it.
 
 You are talking to: ${agentName} (Reputation: ${agentReputation}).
 Keep answers concise and helpful.`
@@ -191,13 +199,16 @@ Keep answers concise and helpful.`
     // Append current query
     contents.push({
         role: 'user',
-        parts: [{ text: `${systemPrompt}\n\nUser: ${query}` }]
+        parts: [{ text: query }]
     })
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+            systemInstruction: {
+                parts: [{ text: systemPrompt }]
+            },
             contents: contents
         })
     })

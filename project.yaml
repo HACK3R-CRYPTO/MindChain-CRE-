@@ -33,8 +33,10 @@ staging-settings:
 
 # ==========================================================================
 production-settings:
+  experimental-chains:
+    - chain-selector: 10344358851600513435
+      rpc-url: "https://sepolia.base.org"
+      forwarder: "0xD6626C11bC9a58D14967ED061b4020c02741982b"
   rpcs:
     - chain-name: ethereum-testnet-sepolia
       url: https://ethereum-sepolia-rpc.publicnode.com
-    - chain-name: base-testnet-sepolia
-      url: https://sepolia.base.org

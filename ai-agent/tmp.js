@@ -13782,7 +13782,7 @@ var getAgentIdentity = async (runtime2, userAddress) => {
       type: "function"
     }
   ];
-  const rpcUrl = "https://sepolia-rollup.arbitrum.io/rpc";
+  const rpcUrl = "https://sepolia.base.org";
   return {
     tokenId: 1n,
     name: "Agent Zero",
@@ -13824,6 +13824,8 @@ var onHttpTrigger = async (runtime2, payload) => {
     runtime2.log(`Action: ${requestData.action}`);
     runtime2.log(`User: ${requestData.userAddress}`);
     const agentInfo = await getAgentIdentity(runtime2, requestData.userAddress);
+    runtime2.log(`✅ Agent Identity Verified: ${agentInfo.name} (ID: ${agentInfo.tokenId})`);
+    runtime2.log(`★ Reputation Score: ${agentInfo.reputation}`);
     if (requestData.action === "chat" && requestData.query) {
       const systemPrompt = `You are MindChain, an AI Assistant on Base Sepolia.
             You are talking to an agent named ${agentInfo.name} (Reputation: ${agentInfo.reputation}).
@@ -13831,19 +13833,14 @@ var onHttpTrigger = async (runtime2, payload) => {
       const fullPrompt = `${systemPrompt}
 
 User: ${requestData.query}`;
-      let apiKey;
-      try {
-        const secretData = await runtime2.getSecret({ id: "GEMINI_API_KEY", namespace: "" });
-        if (secretData && secretData.result) {
-          apiKey = secretData.result().value;
-        }
-      } catch (e) {
-        runtime2.log(`Secrets lookup failed (expected in local sim without advanced config): ${e}`);
-      }
+      const geminiApiKey = runtime2.getSecret({ id: "GEMINI_API_KEY" }).result();
+      const apiKey = geminiApiKey.value;
       if (!apiKey) {
         throw new Error("GEMINI_API_KEY not found. Ensure it is set in your secrets.yaml or environment.");
       }
+      runtime2.log(`\uD83E\uDDE0 AI Brain Prompting with context...`);
       const aiResponse = await callGeminiAI(runtime2, fullPrompt, apiKey);
+      runtime2.log(`✨ AI Response Generated successfully`);
       return {
         status: "success",
         result: aiResponse,

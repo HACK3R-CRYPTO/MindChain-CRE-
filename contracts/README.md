@@ -57,6 +57,6 @@ npx hardhat test
 ## 📍 Deployed Addresses (Base Sepolia)
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentRegistry | `0x0Cd8459F4cAc09517392896639938dDA01dD6fd9` | [View](https://sepolia.basescan.org/address/0x0Cd8459F4cAc09517392896639938dDA01dD6fd9) |
-| PaymentGateway | `0xa6f0e4027F97B448369463288c46436D3DaD6b24` | [View](https://sepolia.basescan.org/address/0xa6f0e4027F97B448369463288c46436D3DaD6b24) |
-| KnowledgeShare | `0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2` | [View](https://sepolia.basescan.org/address/0x1f9090aaE28b8a3dCeaDf281B0F12821e67211d2) |
+| AgentRegistry | `0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63` | [View](https://sepolia.basescan.org/address/0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63) |
+| PaymentGateway | `0xD7c2951C3eCE0aad1a4e8264107e34DCfbC4018B` | [View](https://sepolia.basescan.org/address/0xD7c2951C3eCE0aad1a4e8264107e34DCfbC4018B) |
+| KnowledgeShare | `0xe3c4eF214ef36bEFb375D7D8A4782252B037e8C3` | [View](https://sepolia.basescan.org/address/0xe3c4eF214ef36bEFb375D7D8A4782252B037e8C3) |

@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
 import { parseUnits, keccak256, toHex } from 'viem'
-import { IERC20_ABI, PAYMENT_GATEWAY_ABI } from '@/lib/abis'
+import { IERC20_ABI, PAYMENT_GATEWAY_ABI, REPUTATION_REGISTRY_ABI } from '@/lib/abis'
 
 const PAYMENT_GATEWAY_ADDRESS = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS as `0x${string}`
+const REPUTATION_REGISTRY_ADDRESS = process.env.NEXT_PUBLIC_REPUTATION_REGISTRY_ADDRESS as `0x${string}`
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS as `0x${string}`
 const CHAT_COST = parseUnits('0.01', 6) // 0.01 USDC (assuming 6 decimals)
 
@@ -14,6 +16,7 @@ interface Message {
     content: string
     timestamp: Date
     source?: 'CRE' | 'SIMULATION'
+    agentReputation?: string
 }
 
 export function AIChat() {
@@ -22,6 +25,7 @@ export function AIChat() {
     const [input, setInput] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [status, setStatus] = useState('')
+    const [agentReputation, setAgentReputation] = useState<string | null>(null)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     // Scroll to bottom
@@ -31,6 +35,31 @@ export function AIChat() {
 
     const { writeContractAsync } = useWriteContract()
     const publicClient = usePublicClient()
+
+    // Fetch Reputation on load
+    useEffect(() => {
+        const fetchReputation = async () => {
+            if (!publicClient) return
+            try {
+                // For demo, we use agentId 1. In production, this would be dynamic.
+                const data = await publicClient.readContract({
+                    address: REPUTATION_REGISTRY_ADDRESS,
+                    abi: REPUTATION_REGISTRY_ABI,
+                    functionName: 'getSummary',
+                    args: [1n, [], "", ""], // empty client list = all, empty tags = all
+                })
+                const [count, value, decimals] = data as [bigint, bigint, number]
+                if (count > 0n) {
+                    setAgentReputation(`${value}/${10 ** decimals}`)
+                } else {
+                    setAgentReputation("New Agent")
+                }
+            } catch (e) {
+                console.error("Failed to fetch reputation:", e)
+            }
+        }
+        fetchReputation()
+    }, [publicClient])
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
@@ -71,7 +100,6 @@ export function AIChat() {
 
             setStatus('Waiting for payment confirmation...')
             // STRICT VERIFICATION: Wait for transaction to be mined
-            // STRICT VERIFICATION: Wait for transaction to be mined
             if (!publicClient) throw new Error('Public client not available')
 
             const receipt = await publicClient.waitForTransactionReceipt({ hash: tx })
@@ -81,8 +109,6 @@ export function AIChat() {
             }
 
             setStatus('Payment confirmed! Thinking...')
-
-            setStatus('Thinking...')
 
             // 3. Call CRE / Simulation API
             const response = await fetch('/api/chat', {
@@ -104,7 +130,8 @@ export function AIChat() {
                 role: 'assistant',
                 content: data.response || data.result || 'Sorry, I encountered an error.',
                 timestamp: new Date(),
-                source: data.source
+                source: data.source,
+                agentReputation: data.agent?.reputation || agentReputation
             }
 
             setMessages((prev) => [...prev, assistantMessage])
@@ -131,6 +158,9 @@ export function AIChat() {
                         <div className="text-center">
                             <p className="text-lg mb-2">🤖 MindChain AI Assistant</p>
                             <p className="text-sm">Pay 0.01 USDC to chat with on-chain context.</p>
+                            {agentReputation && (
+                                <p className="text-xs text-purple-400 mt-2">Agent Reputation: {agentReputation}</p>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -145,7 +175,9 @@ export function AIChat() {
                                     : 'bg-gray-800 text-gray-100'
                                     }`}
                             >
-                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                <div className="text-sm prose prose-invert prose-sm max-w-none">
+                                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 mt-1 px-1">
@@ -153,12 +185,19 @@ export function AIChat() {
                                     {message.timestamp.toLocaleTimeString()}
                                 </span>
                                 {message.source && (
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${message.source === 'CRE'
-                                        ? 'border-green-500 text-green-400 bg-green-900/20'
-                                        : 'border-yellow-500 text-yellow-400 bg-yellow-900/20'
-                                        }`}>
-                                        {message.source === 'CRE' ? '🔒 CRE Verified' : '⚡ Simulation'}
-                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${message.source === 'CRE'
+                                            ? 'border-green-500 text-green-400 bg-green-900/20'
+                                            : 'border-yellow-500 text-yellow-400 bg-yellow-900/20'
+                                            }`}>
+                                            {message.source === 'CRE' ? '🔒 CRE Verified' : '⚡ Simulation'}
+                                        </span>
+                                        {message.agentReputation && (
+                                            <span className="text-[10px] px-1.5 py-0.5 rounded border border-purple-500/50 text-purple-400 bg-purple-900/20">
+                                                ★ Rep: {message.agentReputation}
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                         </div>

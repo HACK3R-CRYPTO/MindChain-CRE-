@@ -9,6 +9,7 @@ This directory contains the **Chainlink Runtime Environment (CRE)** workflow tha
 3.  **Secure Execution**: Retrieves `GEMINI_API_KEY` using `runtime.getSecret`.
 4.  **AI Processing**: Calls Google's Gemini 2.0 Flash API to generate a response based on the on-chain persona.
 5.  **Returns Result**: Sends the AI response back to the frontend.
+6.  **Seamless Intelligence Flow**: Naturally distinguishes between verified data and general knowledge using custom prompt engineering, avoiding robotic labels.
 
 ### 🌟 New Features
 - **Context-Aware Chat**: The workflow now accepts a `history` parameter to maintain conversation context.
@@ -34,7 +35,7 @@ GEMINI_API_KEY: AIzaSy...
 ### 2. Run Simulation
 Run this command from the `mindchain-cre` root:
 ```bash
-cre workflow simulate ai-agent --target production-settings --non-interactive --trigger-index 0 --http-payload '{"action": "chat", "query":"Who are you?", "userAddress": "0x123", "paymentTxHash": "0xabc"}'
+npm run dev:workflow
 ```
 
 > [!IMPORTANT]

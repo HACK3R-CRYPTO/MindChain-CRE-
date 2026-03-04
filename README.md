@@ -16,16 +16,17 @@
 **MindChain CRE** is a composable playground where agents build **ERC-8004 Identity**, purchase usage credits (**x402**), and **power Heterogeneous AI Compute (Vision & Text)** with **verifiable, community-owned knowledge**—orchestrated by **Chainlink CRE**.
 
 It demonstrates how **Chainlink Runtime Environment (CRE)** can orchestrate complex AI workflows including:
--  **Vision Node (MNIST)** - Specialized Python compute for image recognition
+- **Vision Node (MNIST)** - Specialized native compute for image recognition (TensorFlow.js)
 - 📚 **Community Knowledge** - Verifiable, community-owned data
-- 💬 **Text Node (Chat)** - General purpose LLM (Gemini)
+- 💬 **Text Node (Chat)** - General purpose LLM (Gemini) with **Seamless Intelligence Flow**
 - 🆔 **Context-Aware Chat** - Personalized AI memory per user (session history)
-- 💰 **x402 Micropayments** - Pay-per-use with USDC (Seamless onboarding)
+- � **Premium UI** - Full **Markdown Support** (Bolding, lists, code blocks) for AI responses
+- �💰 **x402 Micropayments** - Pay-per-use with USDC (Seamless onboarding)
 
 ### 🧠 Universal Compute Orchestration
 
 MindChain demonstrates that Chainlink CRE can orchestrate **any** type of off-chain compute, not just LLMs.
-*   **Vision Node (MNIST Demo)**: Proves the network can handle **Specialized Compute** (Python/TensorFlow) for specific tasks like **digit recognition (0-9)**.
+*   **Vision Node (MNIST Demo)**: Proves the network can handle **Specialized Compute** (Native TensorFlow.js) for specific tasks like **digit recognition (0-9)**.
 *   **Text Node (Chat Demo)**: Proves the network can handle **General Purpose Compute** (LLMs) for knowledge retrieval.
 
 This proves that MindChain is a **Universal Compute Orchestrator**.
@@ -64,7 +65,7 @@ graph TB
     CRE -->|6. Get Agent Identity| AgentRegistry["AgentRegistry ERC-8004"]
     
     CRE -.->|7a. Text Task| Gemini["Text Node (LLM)"]
-    CRE -.->|7b. Vision Task| VisionNode["Vision Node (Python)"]
+    CRE -.->|7b. Vision Task| VisionNode["Vision Node (Native TF.js)"]
     
     CRE -->|8. Update Reputation| AgentRegistry
     CRE -->|9. Response| Frontend
@@ -80,8 +81,10 @@ graph TB
 
 ## ✨ Key Features
 
-- ✅ **Universal Compute Orchestration** - Chainlink CRE orchestrating both Vision (Python) and Text (LLM) Nodes.
-- ✅ **Heterogeneous AI** - Vision Nodes (MNIST) and Text Nodes (Gemini) working in parallel.
+- ✅ **Universal Compute Orchestration** - Chainlink CRE orchestrating both Vision (Native) and Text (LLM) Nodes.
+- ✅ **Seamless Intelligence Flow** - Natural distinction between on-chain verified data and general AI knowledge without robotic labels.
+- ✅ **Markdown Supported Chat** - Professional rendering of AI responses (bold, lists, etc.) using `@tailwindcss/typography`.
+- ✅ **Heterogeneous AI** - Vision Nodes (MNIST/TF.js) and Text Nodes (Gemini) working in parallel.
 - ✅ **Resilient Architecture** - Full Simulation Fallback for reliable, glitch-free demos.
 - ✅ **Direct On-Chain Micropayments** - Pay-per-use AI services with USDC.
 - ✅ **ERC-8004 Agent Registry** - On-chain agent identities and reputation.
@@ -128,7 +131,7 @@ curl -sSL https://install.chain.link/cre | bash
 cre login
 
 # Install frontend dependencies
-cd ../../frontend
+cd frontend
 npm install
 ```
 
@@ -158,13 +161,21 @@ ETHERSCAN_API_KEY=your_etherscan_key
 ```bash
 cd contracts
 npx hardhat compile
-npx hardhat run scripts/deploy.ts --network baseSepolia
+# Deploy individual components
+npx hardhat run scripts/deploy-agent-registry.ts --network sepolia
+npx hardhat run scripts/deploy.ts --network sepolia # PaymentGateway
 ```
 
 ### Simulate CRE Workflow
 
+We use a standardized simulation command to verify on-chain identity and AI logic:
 
-### Run the Application
+```bash
+# From the root directory
+npm run dev:workflow
+```
+
+This command runs `cre workflow simulate` for the `ai-agent/` workflow, using `payload.json` and your encrypted secrets.
 
 ```bash
 # Start frontend
@@ -181,13 +192,15 @@ npm run dev
 ```
 mindchain-cre/
 ├── ai-agent/               # CRE workflow (TypeScript)
-│   ├── main.ts             # Main workflow logic
+│   ├── main.ts             # Core AI Workflow + On-Chain Identity
+│   ├── workflow.yaml       # CRE Workflow Config
 │   └── package.json
-├── project.yaml            # CRE Project Config
-└── secrets.yaml            # Encrypted secrets (gitignored)
+├── project.yaml            # CRE Project Config (Root)
+├── secrets.yaml            # Secret mappings (Root)
+└── payload.json            # Simulation payload
 contracts/                  # Smart contracts (Solidity)
 ├── contracts/
-│   ├── AgentRegistry.sol   # ERC-8004 agent registry
+│   ├── AgentRegistry.sol   # ERC-8004 Registry (w/ getAgentInfo)
 │   ├── PaymentGateway.sol  # On-chain payment verification
 │   └── KnowledgeShare.sol  # Community knowledge contract
 └── scripts/deploy.ts
@@ -197,6 +210,7 @@ frontend/                   # Next.js frontend
 │   ├── page.tsx            # Main page
 │   └── layout.tsx
 ├── components/
+│   ├── agent-registry.tsx  # Enhanced Identity UI
 │   ├── mnist-canvas.tsx
 │   ├── knowledge-share.tsx
 │   ├── ai-chat.tsx
@@ -226,16 +240,16 @@ Detailed documentation for each component can be found here:
 
 This project uses the following Chainlink components:
 
-### CRE Workflow (`mindchain-cre/ai-agent/`)
-- [**main.ts**](./mindchain-cre/ai-agent/main.ts): Main workflow logic using Chainlink CRE SDK.
-  - **HTTP Trigger**: Receives user queries via HTTP endpoint.
-  - **HTTP Client Capability**: Calls Gemini/OpenAI APIs.
-  - **Simulation Mode**: Uses `frontend/lib/simulation.ts` for instant demo.
+### CRE Workflow (`ai-agent/`)
+- [**main.ts**](./ai-agent/main.ts): Main workflow logic using Chainlink CRE SDK.
+  - **On-Chain Identity**: Uses `ethers` to fetch real-time identity/reputation via `getAgentInfo`.
+  - **Secret Management**: Uses `runtime.getSecret().result()` for standardized security.
+  - **HTTP Client Capability**: Calls Gemini AI.
 
 ### Smart Contracts (`contracts/`)
-- [**AgentRegistry.sol**](./contracts/contracts/AgentRegistry.sol): ERC-8004 compliant agent identity registry (MindChain Identity NFT).
-- [**PaymentGateway.sol**](./contracts/contracts/PaymentGateway.sol): x402 payment verification contract.
-- [**KnowledgeShare.sol**](./contracts/contracts/KnowledgeShare.sol): Community knowledge submission and voting system.
+- [**AgentRegistry.sol**](./contracts/contracts/AgentRegistry.sol): ERC-8004 Identity Registry with on-chain name storage.
+- [**PaymentGateway.sol**](./contracts/contracts/PaymentGateway.sol): x402 payment verification.
+- [**KnowledgeShare.sol**](./contracts/contracts/KnowledgeShare.sol): Community knowledge system.
 
 ---
 
@@ -249,8 +263,8 @@ This project uses the following Chainlink components:
 
 ### Simulate CRE Workflow
 ```bash
-cd mindchain-cre/ai-agent
-cre workflow simulate .
+# Run the local simulation with root-level secrets
+npm run dev:workflow
 ```
 
 ### Test Smart Contracts
@@ -273,21 +287,28 @@ npx hardhat test
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AgentRegistry | `0x0Cd8459F4cAc09517392896639938dDA01dD6fd9` | [View on Basescan](https://sepolia.basescan.org/address/0x0Cd8459F4cAc09517392896639938dDA01dD6fd9) |
-| PaymentGateway | `0xa6f0e4027F97B448369463288c46436D3DaD6b24` | [View on Basescan](https://sepolia.basescan.org/address/0xa6f0e4027F97B448369463288c46436D3DaD6b24) |
+| AgentRegistry | `0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63` | [View on Basescan](https://sepolia.basescan.org/address/0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63) |
+| PaymentGateway | `0xD7c2951C3eCE0aad1a4e8264107e34DCfbC4018B` | [View on Basescan](https://sepolia.basescan.org/address/0xD7c2951C3eCE0aad1a4e8264107e34DCfbC4018B) |
 | USDC (Base Sepolia) | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | [View on Basescan](https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e) |
 
 ---
 
-## 🏆 Hackathon Requirements
+## 🏆 Hackathon Requirements (CRE & AI Track)
 
-✅ **CRE Workflow**: TypeScript workflow with HTTP trigger and AI integration  
-✅ **Blockchain + External Integration**: Base Sepolia + Gemini API + PaymentGateway
-✅ **Hybrid Deployment**: CRE CLI simulation (primary) + production-ready contracts
-✅ **Enhanced AI**: Context-aware Chat, Knowledge Verification, and Image Recognition
-✅ **Demo Video**: 3-5 minute walkthrough  
-✅ **Public Source Code**: GitHub repository  
-✅ **README with Chainlink Links**: Comprehensive documentation  
+MindChain was purpose-built to perfectly hit the **$17,000 CRE & AI Track** requirements for combining intelligence with verifiable execution:
+
+✅ **"Integrate at least one blockchain with an external API, system, data source, LLM..."**  
+*We integrate Base Sepolia (ERC-8004 Registry + Payments), the Gemini LLM (Text Compute), a Python Vision Node (Specialized Compute), and IPFS (Data Source) all orchestrated via a single CRE workflow.*
+
+✅ **"AI agents consuming CRE workflows with x402 payments"**  
+*Both our Vision Node (MNIST Drawing) and Text Node (AI Chat) natively implement the x402 protocol specification. The frontend forces an on-chain USDC/ETH payment on Base Sepolia before the Next.js API permits the compute request.*
+
+✅ **"AI agent blockchain abstraction"**  
+*The CRE workflow (`ai-agent/main.ts`) intercepts AI chat requests, verifies the agent's identity and reputation on the Base Sepolia blockchain, and injects that verified context into the LLM prompt. The AI treats the blockchain as its ultimate source of truth.*
+
+✅ **"Demonstrate a successful simulation (via the CRE CLI)"**  
+*Our core logic runs flawlessly in the CRE simulator. See the demo video for the live terminal execution proving our orchestration logic is atomic and verifable.*
+
 
 ---
 

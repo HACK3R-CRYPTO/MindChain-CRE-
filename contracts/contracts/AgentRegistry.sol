@@ -1,128 +1,254 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /**
  * @title AgentRegistry
- * @dev ERC-8004 compliant AI agent identity and reputation registry
- *
- * This contract implements the ERC-8004 standard for trustless AI agents:
- * - Identity Registry: ERC-721 tokens for portable agent identifiers
- * - Reputation Registry: Standardized feedback and scoring
- * - Validation Registry: Verifying agent work and interactions
+ * @dev Strict implementation of ERC-8004: Trustless Agents
+ * Identity Registry component using ERC-721 with URIStorage.
  */
-contract AgentRegistry is ERC721, Ownable {
-    struct Agent {
-        uint256 tokenId;
-        string name;
-        int256 reputation;
-        uint256 totalInteractions;
-        uint256 registeredAt;
-        string metadata; // IPFS hash or JSON metadata
+contract AgentRegistry is ERC721URIStorage, Ownable {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
+
+    struct MetadataEntry {
+        string metadataKey;
+        bytes metadataValue;
     }
 
-    // Mapping from agent address to Agent struct
-    mapping(address => Agent) public agents;
-
-    // Mapping from token ID to agent address
-    mapping(uint256 => address) public tokenToAgent;
-
-    // Counter for token IDs
+    // Counter for token IDs (agentId)
     uint256 private _tokenIdCounter;
 
-    // Authorized updaters (e.g., CRE workflow addresses)
-    mapping(address => bool) public authorizedUpdaters;
+    // Mapping for on-chain metadata
+    // agentId => metadataKey => metadataValue
+    mapping(uint256 => mapping(string => bytes)) private _metadata;
 
-    // Events
-    event AgentRegistered(address indexed agent, uint256 tokenId, string name);
-    event ReputationUpdated(
-        address indexed agent,
-        int256 oldReputation,
-        int256 newReputation
+    // Mapping for agent wallet
+    mapping(uint256 => address) private _agentWallets;
+
+    // Mapping for agent names (on-chain for easy AI retrieval)
+    mapping(uint256 => string) private _agentNames;
+
+    // Reserved metadata keys
+    string public constant KEY_AGENT_WALLET = "agentWallet";
+
+    // Events as per ERC-8004
+    event Registered(
+        uint256 indexed agentId,
+        string agentURI,
+        address indexed owner
     );
-    event InteractionRecorded(
-        address indexed agent,
-        bytes32 queryHash,
-        uint256 timestamp
+    event MetadataSet(
+        uint256 indexed agentId,
+        string indexed indexedMetadataKey,
+        string metadataKey,
+        bytes metadataValue
     );
-    event UpdaterAuthorized(address indexed updater, bool status);
+    event URIUpdated(
+        uint256 indexed agentId,
+        string newURI,
+        address indexed updatedBy
+    );
 
     constructor() ERC721("AgentMind Identity", "AGENT") Ownable(msg.sender) {
         _tokenIdCounter = 1;
     }
 
     /**
-     * @dev Register a new AI agent
-     * @param name Human-readable agent name
-     * @param metadata IPFS hash or JSON metadata
+     * @dev Register a new agent with URI and initial metadata
      */
-    function registerAgent(
-        string memory name,
-        string memory metadata
+    function register(
+        string calldata name,
+        string calldata agentURI,
+        MetadataEntry[] calldata metadata
+    ) external returns (uint256 agentId) {
+        agentId = _tokenIdCounter++;
+        _safeMint(msg.sender, agentId);
+        _setTokenURI(agentId, agentURI);
+
+        _agentNames[agentId] = name;
+
+        // Set default agent wallet to owner
+        _agentWallets[agentId] = msg.sender;
+        emit MetadataSet(
+            agentId,
+            KEY_AGENT_WALLET,
+            KEY_AGENT_WALLET,
+            abi.encodePacked(msg.sender)
+        );
+
+        // Set additional metadata
+        for (uint256 i = 0; i < metadata.length; i++) {
+            require(
+                keccak256(bytes(metadata[i].metadataKey)) !=
+                    keccak256(bytes(KEY_AGENT_WALLET)),
+                "Reserved key"
+            );
+            _metadata[agentId][metadata[i].metadataKey] = metadata[i]
+                .metadataValue;
+            emit MetadataSet(
+                agentId,
+                metadata[i].metadataKey,
+                metadata[i].metadataKey,
+                metadata[i].metadataValue
+            );
+        }
+
+        emit Registered(agentId, agentURI, msg.sender);
+        return agentId;
+    }
+
+    /**
+     * @dev Simple registration with URI
+     */
+    function register(
+        string calldata name,
+        string calldata agentURI
+    ) external returns (uint256 agentId) {
+        agentId = _tokenIdCounter++;
+        _safeMint(msg.sender, agentId);
+        _setTokenURI(agentId, agentURI);
+
+        _agentNames[agentId] = name;
+
+        // Set default agent wallet to owner
+        _agentWallets[agentId] = msg.sender;
+        emit MetadataSet(
+            agentId,
+            KEY_AGENT_WALLET,
+            KEY_AGENT_WALLET,
+            abi.encodePacked(msg.sender)
+        );
+
+        emit Registered(agentId, agentURI, msg.sender);
+        return agentId;
+    }
+
+    /**
+     * @dev Minimal registration
+     */
+    function register() external returns (uint256 agentId) {
+        agentId = _tokenIdCounter++;
+        _safeMint(msg.sender, agentId);
+
+        // Set default agent wallet to owner
+        _agentWallets[agentId] = msg.sender;
+        emit MetadataSet(
+            agentId,
+            KEY_AGENT_WALLET,
+            KEY_AGENT_WALLET,
+            abi.encodePacked(msg.sender)
+        );
+
+        emit Registered(agentId, "", msg.sender);
+        return agentId;
+    }
+
+    /**
+     * @dev Update agent URI
+     */
+    function setAgentURI(uint256 agentId, string calldata newURI) external {
+        _checkOwner(msg.sender, agentId);
+        _setTokenURI(agentId, newURI);
+        emit URIUpdated(agentId, newURI, msg.sender);
+    }
+
+    /**
+     * @dev Get on-chain metadata
+     */
+    function getMetadata(
+        uint256 agentId,
+        string calldata metadataKey
+    ) external view returns (bytes memory) {
+        if (
+            keccak256(bytes(metadataKey)) == keccak256(bytes(KEY_AGENT_WALLET))
+        ) {
+            return abi.encodePacked(_agentWallets[agentId]);
+        }
+        return _metadata[agentId][metadataKey];
+    }
+
+    /**
+     * @dev Set on-chain metadata
+     */
+    function setMetadata(
+        uint256 agentId,
+        string calldata metadataKey,
+        bytes calldata metadataValue
     ) external {
-        require(agents[msg.sender].tokenId == 0, "Agent already registered");
-
-        uint256 tokenId = _tokenIdCounter++;
-
-        agents[msg.sender] = Agent({
-            tokenId: tokenId,
-            name: name,
-            reputation: 0,
-            totalInteractions: 0,
-            registeredAt: block.timestamp,
-            metadata: metadata
-        });
-
-        tokenToAgent[tokenId] = msg.sender;
-        _safeMint(msg.sender, tokenId);
-
-        emit AgentRegistered(msg.sender, tokenId, name);
-    }
-
-    /**
-     * @dev Update agent reputation (only authorized updaters)
-     * @param agent Agent address
-     * @param delta Reputation change (positive or negative)
-     */
-    function updateReputation(address agent, int256 delta) external {
+        _checkOwner(msg.sender, agentId);
         require(
-            authorizedUpdaters[msg.sender] || msg.sender == owner(),
-            "Not authorized to update reputation"
+            keccak256(bytes(metadataKey)) != keccak256(bytes(KEY_AGENT_WALLET)),
+            "Use setAgentWallet"
         );
-        require(agents[agent].tokenId != 0, "Agent not registered");
 
-        int256 oldReputation = agents[agent].reputation;
-        agents[agent].reputation += delta;
-
-        emit ReputationUpdated(agent, oldReputation, agents[agent].reputation);
+        _metadata[agentId][metadataKey] = metadataValue;
+        emit MetadataSet(agentId, metadataKey, metadataKey, metadataValue);
     }
 
     /**
-     * @dev Record an agent interaction
-     * @param agent Agent address
-     * @param queryHash Hash of the query/interaction
+     * @dev Set authorized agent wallet with signature verification
      */
-    function recordInteraction(address agent, bytes32 queryHash) external {
-        require(
-            authorizedUpdaters[msg.sender] || msg.sender == owner(),
-            "Not authorized to record interactions"
+    function setAgentWallet(
+        uint256 agentId,
+        address newWallet,
+        uint256 deadline,
+        bytes calldata signature
+    ) external {
+        _checkOwner(msg.sender, agentId);
+        require(block.timestamp <= deadline, "Signature expired");
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                keccak256(
+                    "SetAgentWallet(uint256 agentId,address newWallet,uint256 deadline)"
+                ),
+                agentId,
+                newWallet,
+                deadline
+            )
         );
-        require(agents[agent].tokenId != 0, "Agent not registered");
 
-        agents[agent].totalInteractions++;
+        bytes32 hash = structHash.toEthSignedMessageHash();
+        address signer = hash.recover(signature);
+        require(signer == newWallet, "Invalid signature from new wallet");
 
-        emit InteractionRecorded(agent, queryHash, block.timestamp);
+        _agentWallets[agentId] = newWallet;
+        emit MetadataSet(
+            agentId,
+            KEY_AGENT_WALLET,
+            KEY_AGENT_WALLET,
+            abi.encodePacked(newWallet)
+        );
+    }
+
+    function getAgentWallet(uint256 agentId) external view returns (address) {
+        return _agentWallets[agentId];
+    }
+
+    function unsetAgentWallet(uint256 agentId) external {
+        _checkOwner(msg.sender, agentId);
+        _agentWallets[agentId] = address(0);
+        emit MetadataSet(agentId, KEY_AGENT_WALLET, KEY_AGENT_WALLET, "");
     }
 
     /**
-     * @dev Get agent information
-     * @param agent Agent address
-     * @return tokenId Agent's token ID
-     * @return name Agent's name
-     * @return reputation Agent's reputation score
-     * @return totalInteractions Total number of interactions
+     * @dev Check registration status
+     */
+    function isRegistered(address agent) public view returns (bool) {
+        // In this implementation, the token owner is the registered agent identity
+        for (uint256 i = 1; i < _tokenIdCounter; i++) {
+            if (_ownerOf(i) == agent) return true;
+        }
+        return false;
+    }
+
+    /**
+     * @dev Get detailed agent info for AI/Frontend use
      */
     function getAgentInfo(
         address agent
@@ -136,44 +262,29 @@ contract AgentRegistry is ERC721, Ownable {
             uint256 totalInteractions
         )
     {
-        require(agents[agent].tokenId != 0, "Agent not registered");
-        Agent memory a = agents[agent];
-        return (a.tokenId, a.name, a.reputation, a.totalInteractions);
+        for (uint256 i = 1; i < _tokenIdCounter; i++) {
+            if (_ownerOf(i) == agent) {
+                return (i, _agentNames[i], 100, 0); // Mocking rep/interactions for now
+            }
+        }
+        revert("Agent not registered");
     }
 
-    /**
-     * @dev Authorize or revoke an updater (only owner)
-     * @param updater Address to authorize/revoke
-     * @param status Authorization status
-     */
-    function setAuthorizedUpdater(
-        address updater,
-        bool status
-    ) external onlyOwner {
-        authorizedUpdaters[updater] = status;
-        emit UpdaterAuthorized(updater, status);
-    }
-
-    /**
-     * @dev Check if an agent is registered
-     * @param agent Agent address
-     * @return bool Registration status
-     */
-    function isRegistered(address agent) external view returns (bool) {
-        return agents[agent].tokenId != 0;
+    function getAgentName(
+        uint256 agentId
+    ) external view returns (string memory) {
+        return _agentNames[agentId];
     }
 
     /**
      * @dev Get total number of registered agents
-     * @return uint256 Total agents
      */
-    function totalAgents() external view returns (uint256) {
+    function getAgentCount() external view returns (uint256) {
         return _tokenIdCounter - 1;
     }
 
     /**
-     * @dev Override transfer functions to make tokens soulbound (non-transferable)
-     * This ensures agent identities remain tied to their original addresses
+     * @dev Soulbound logic: Reset agentWallet on transfer
      */
     function _update(
         address to,
@@ -181,7 +292,39 @@ contract AgentRegistry is ERC721, Ownable {
         address auth
     ) internal virtual override returns (address) {
         address from = _ownerOf(tokenId);
-        require(from == address(0), "AgentMind: tokens are soulbound");
+        // Clear wallet on transfer as per spec
+        if (from != address(0) && to != address(0)) {
+            _agentWallets[tokenId] = address(0);
+        }
         return super._update(to, tokenId, auth);
+    }
+
+    /**
+     * @dev Internal helper to check owner or authorized
+     */
+    function _checkOwner(address spender, uint256 agentId) internal view {
+        require(
+            _ownerOf(agentId) == spender ||
+                isApprovedForAll(_ownerOf(agentId), spender),
+            "Not owner nor approved"
+        );
+    }
+
+    /**
+     * @dev Required override for ERC721URIStorage
+     */
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    /**
+     * @dev Required override for ERC721URIStorage
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }

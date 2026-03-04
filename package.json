@@ -4,10 +4,9 @@
     "description": "Autonomous AI Knowledge Agent powered by Chainlink Runtime Environment",
     "private": true,
     "scripts": {
-        "setup": "npm install && cd workflows/ai-agent && bun install && cd ../../frontend && npm install && cd ../backend/x402-server && npm install && cd ../../contracts && npm install",
-        "dev:workflow": "cd workflows/ai-agent && cre workflow simulate .",
+        "setup": "npm install && cd ai-agent && bun install && cd ../frontend && npm install && cd ../contracts && npm install",
+        "dev:workflow": "cre workflow simulate ai-agent/ --http-payload @/Users/ogazboiz/code\\ /hackathon/agentmind-cre/payload.json -T production-settings --non-interactive --trigger-index 0",
         "dev:frontend": "cd frontend && npm run dev",
-        "dev:backend": "cd backend/x402-server && npm run dev",
         "deploy:contracts": "cd contracts && npx hardhat run scripts/deploy.ts --network sepolia",
         "test:contracts": "cd contracts && npx hardhat test"
     },

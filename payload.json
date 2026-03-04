@@ -1,0 +1,6 @@
+{
+    "userAddress": "0x1234567890123456789012345678901234567890",
+    "query": "What is the status of the MindChain CRE?",
+    "action": "chat",
+    "paymentProof": "0xabcd1234efgh5678"
+}

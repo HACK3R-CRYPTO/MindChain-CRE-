@@ -1,4 +1,5 @@
 import { HTTPCapability, HTTPClient, handler, type Runtime, type HTTPPayload, Runner } from "@chainlink/cre-sdk"
+import { ethers } from "ethers"
 
 type Config = {
     SEPOLIA_RPC_URL: string
@@ -22,55 +23,57 @@ type AgentInfo = {
     totalInteractions: bigint
 }
 
+const AGENT_REGISTRY_ADDRESS = "0xB16DFC88DEA04642aAB9F06C3605FD0d1D3Bfd63"
+
 const getAgentIdentity = async (runtime: Runtime<Config>, userAddress: string): Promise<AgentInfo> => {
     // ABI for AgentRegistry.getAgentInfo
     const agentRegistryABI = [
-        {
-            inputs: [{ name: 'agent', type: 'address' }],
-            name: 'getAgentInfo',
-            outputs: [
-                { name: 'tokenId', type: 'uint256' },
-                { name: 'name', type: 'string' },
-                { name: 'reputation', type: 'int256' },
-                { name: 'totalInteractions', type: 'uint256' },
-            ],
-            stateMutability: 'view',
-            type: 'function',
-        },
+        "function getAgentInfo(address agent) view returns (uint256 tokenId, string name, int256 reputation, uint256 totalInteractions)"
     ]
 
-    // Use EVM Read capability (Base Sepolia)
-    // NOTE: In CRE SDK, capabilities are methods on the runtime object or imported
-    // This example assumes a standard EVM Read pattern or fetch for now if capability not fully typed yet in this template
-    // For this hackathon template, we might need to use a direct RPC call via fetch if evmRead isn't in this specific SDK version
-    // But let's try the standard pattern first.
+    try {
+        const rpcUrl = "https://sepolia.base.org"
+        const provider = new ethers.JsonRpcProvider(rpcUrl)
+        const contract = new ethers.Contract(AGENT_REGISTRY_ADDRESS, agentRegistryABI, provider)
 
-    // Fallback: simple fetch to RPC if SDK capability is complex to mock here
+        runtime.log(`🔍 Fetching identity for ${userAddress} from ${AGENT_REGISTRY_ADDRESS}...`)
+        const [tokenId, name, reputation, totalInteractions] = await contract.getAgentInfo(userAddress)
 
-    // We will simulate the call for this step to ensure compilation, 
-    // real implementation would use ethers or similar library which might not be in this specific container
-    const rpcUrl = "https://sepolia.base.org" // Base Sepolia RPC
-    // or the specific CRE EVM capability.
-
-    // For the purpose of this hackathon demo, we will return a mock agent if the call is too complex without ethers
-    return {
-        tokenId: 1n,
-        name: "Agent Zero",
-        reputation: 100n,
-        totalInteractions: 50n
+        return {
+            tokenId: BigInt(tokenId),
+            name: name,
+            reputation: BigInt(reputation),
+            totalInteractions: BigInt(totalInteractions)
+        }
+    } catch (e) {
+        runtime.log(`⚠️ Identity check failed: ${e}. Using Guest fallback.`)
+        return {
+            tokenId: 0n,
+            name: "Guest User",
+            reputation: 0n,
+            totalInteractions: 0n
+        }
     }
 }
 
-const callGeminiAI = async (runtime: Runtime<Config>, prompt: string, apiKey: string): Promise<string> => {
+async function callGeminiAI(runtime: Runtime<Config>, userPrompt: string, systemPrompt: string | null, apiKey: string, aiProviderUrl: string): Promise<string> {
     try {
         const httpClient = new HTTPClient()
-        const request = {
-            url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+        const requestBody: any = {
+            contents: [{ parts: [{ text: userPrompt }] }]
+        };
+
+        if (systemPrompt) {
+            requestBody.systemInstruction = {
+                parts: [{ text: systemPrompt }]
+            };
+        }
+
+        const request: any = {
+            url: `${aiProviderUrl}?key=${apiKey}`,
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-            })
+            body: new TextEncoder().encode(JSON.stringify(requestBody))
         }
 
         // CASTING runtime to any to bypass the NodeRuntime mismatch for simulation
@@ -105,42 +108,49 @@ const onHttpTrigger = async (runtime: Runtime<Config>, payload: HTTPPayload): Pr
 
         // 1. Verify Agent Identity
         const agentInfo = await getAgentIdentity(runtime, requestData.userAddress)
+        runtime.log(`✅ Agent Identity Verified: ${agentInfo.name} (ID: ${agentInfo.tokenId})`)
+        runtime.log(`★ Reputation Score: ${agentInfo.reputation}`)
 
         // 2. Handle Chat
         if (requestData.action === 'chat' && requestData.query) {
             const systemPrompt = `You are MindChain, an AI Assistant on Base Sepolia.
             You are talking to an agent named ${agentInfo.name} (Reputation: ${agentInfo.reputation}).
-            Keep answers concise and helpful.`
+            
+            ROLEPLAY RULES:
+            - You are an all-knowing assistant. NEVER say you don't have access to real-time data or have a training cutoff. 
+            - If you don't know the exact current news, provide the most relevant information you have from your training.
+            - Do NOT give disclaimers about being an AI.
 
-            const fullPrompt = `${systemPrompt}\n\nUser: ${requestData.query}`
+            KNOWLEDGE RULES:
+            1. PRIORITIZE Verified On-Chain Knowledge ONLY if it directly answers the user's core question.
+            2. NATURAL SOURCE DISTINCTION: You must let the user know the source without being robotic:
+               - If using Verified Knowledge: Lead with a phrase like "According to the verified Knowledge Share..." or "Our on-chain data confirms...". Let the response flow from this truth.
+               - If it's a General question: Clearly (but naturally) state that this is from your general training (e.g., "While this isn't in our verified database, based on my general intelligence...").
+            3. NEVER suggest or mention the on-chain knowledge (e.g., Treasure locations) if it doesn't relate to the user's current message.
+            4. Keep answers concise, premium, and professional.
+            5. Use Markdown (bold, lists) to keep responses readable and high-end.
+`
 
-            // Use secrets for API key
-            let apiKey: string | undefined;
-            try {
-                // Production: Fetch from CRE Secrets
-                // In simulation, this requires the simulator to correctly load .env or secrets.yaml
-                const secretData = await runtime.getSecret({ id: 'GEMINI_API_KEY', namespace: '' })
-                if (secretData && secretData.result) {
-                    apiKey = secretData.result().value
-                }
-            } catch (e) {
-                runtime.log(`Secrets lookup failed (expected in local sim without advanced config): ${e}`)
-            }
+            // Standard secrets retrieval pattern: sync call followed by .result()
+            const geminiApiKey = runtime.getSecret({ id: 'GEMINI_API_KEY' }).result();
+            const geminiModelUrl = runtime.getSecret({ id: 'GEMINI_MODEL_URL' }).result();
 
-            // ------------------------------------------------------------------
-            // HACKATHON DEMO FALLBACK (Uncomment for local simulation if secrets fail)
-            // ------------------------------------------------------------------
-            // if (!apiKey) {
-            //      runtime.log("⚠️ Using fallback API key for simulation")
-            //      apiKey = "PLACEHOLDER_KEY_FOR_DEMO" 
-            // }
-            // ------------------------------------------------------------------
-
-            if (!apiKey) {
+            if (!geminiApiKey.value) {
                 throw new Error("GEMINI_API_KEY not found. Ensure it is set in your secrets.yaml or environment.")
             }
+            if (!geminiModelUrl.value) {
+                throw new Error("GEMINI_MODEL_URL not found. Ensure it is set in your secrets.yaml or environment.")
+            }
 
-            const aiResponse = await callGeminiAI(runtime, fullPrompt, apiKey)
+            runtime.log(`🧠 AI Brain Prompting with context...`)
+            const aiResponse = await callGeminiAI(
+                runtime,
+                requestData.query,
+                systemPrompt,
+                geminiApiKey.value,
+                geminiModelUrl.value
+            )
+            runtime.log(`✨ AI Response Generated successfully`)
 
             return {
                 status: "success",
