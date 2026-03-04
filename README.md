@@ -232,7 +232,7 @@ Detailed documentation for each component can be found here:
 | [**🖥️ Frontend**](./frontend/README.md) | Next.js UI, Wallet, & Canvas | `frontend/.env.local` |
 | [**📜 Smart Contracts**](./contracts/README.md) | Solidity code & Deploy scripts | `contracts/.env` |
 | [**🔮 CRE Agent**](./mindchain-cre/ai-agent/README.md) | Chainlink Workflow & AI Logic | `mindchain-cre/secrets.yaml` |
-| [**👁️ Vision Node**](./mnist_api/README.md) | Python API for MNIST Model | `mnist_api/requirements.txt` |
+| [**👁️ Vision Node**](./_archive/mnist_api/README.md) | Python API for MNIST Model (Archived) | `mnist_api/requirements.txt` |
 
 ---
 
