@@ -3,36 +3,62 @@ import * as tf from '@tensorflow/tfjs'
 import path from 'path'
 import fs from 'fs'
 
-// Dynamic loading of the model
-let model: tf.LayersModel | null = null;
+// Use a global promise to ensure we only load the model once
+// and keep it in memory across hot-reloads.
+const MODEL_KEY = '_mindchain_mnist_promise';
 
-async function loadModel() {
-    if (model) return model;
+async function loadModel(): Promise<tf.LayersModel> {
+    if ((global as any)[MODEL_KEY]) {
+        return (global as any)[MODEL_KEY];
+    }
 
-    console.log('[MNIST] Loading model from filesystem...');
-    const modelJsonPath = path.join(process.cwd(), 'public/model/mnist/model.json');
-    const weightsPath = path.join(process.cwd(), 'public/model/mnist/weights.bin');
+    const loadPromise = (async () => {
+        try {
+            console.log('[MNIST] Initializing TensorFlow.js Model...');
 
-    const modelJson = JSON.parse(fs.readFileSync(modelJsonPath, 'utf8'));
-    const weightsBuffer = fs.readFileSync(weightsPath);
+            if (process.env.NODE_ENV === 'development') {
+                // Proactive cleanup for hot-reloads
+                try {
+                    tf.disposeVariables();
+                } catch (e) { }
+            }
 
-    // We create a custom IO handler that returns the files from memory
-    const ioHandler = {
-        load: async () => {
-            return {
-                modelTopology: modelJson.modelTopology,
-                weightSpecs: modelJson.weightsManifest[0].weights,
-                weightData: weightsBuffer.buffer.slice(
-                    weightsBuffer.byteOffset,
-                    weightsBuffer.byteOffset + weightsBuffer.byteLength
-                ) as ArrayBuffer,
+            const modelJsonPath = path.join(process.cwd(), 'public/model/mnist/model.json');
+            const weightsPath = path.join(process.cwd(), 'public/model/mnist/weights.bin');
+
+            if (!fs.existsSync(modelJsonPath) || !fs.existsSync(weightsPath)) {
+                throw new Error('Model files not found in public/model/mnist/');
+            }
+
+            const modelJson = JSON.parse(fs.readFileSync(modelJsonPath, 'utf8'));
+            const weightsBuffer = fs.readFileSync(weightsPath);
+
+            const ioHandler = {
+                load: async () => {
+                    return {
+                        modelTopology: modelJson.modelTopology,
+                        weightSpecs: modelJson.weightsManifest[0].weights,
+                        weightData: weightsBuffer.buffer.slice(
+                            weightsBuffer.byteOffset,
+                            weightsBuffer.byteOffset + weightsBuffer.byteLength
+                        ) as ArrayBuffer,
+                    };
+                }
             };
-        }
-    };
 
-    model = await tf.loadLayersModel(ioHandler as any);
-    console.log('[MNIST] Model loaded successfully from memory');
-    return model;
+            const loadedModel = await tf.loadLayersModel(ioHandler as any);
+            console.log('[MNIST] Model loaded successfully');
+            return loadedModel;
+        } catch (err) {
+            console.error('[MNIST] Final model load error:', err);
+            // Clear the promise from global so we can retry on next request
+            delete (global as any)[MODEL_KEY];
+            throw err;
+        }
+    })();
+
+    (global as any)[MODEL_KEY] = loadPromise;
+    return loadPromise;
 }
 
 export async function POST(request: Request) {
@@ -56,7 +82,8 @@ export async function POST(request: Request) {
         const mnistModel = await loadModel();
 
         // 2. Preprocess input (28x28 matrix)
-        const input = tf.tensor(image).reshape([1, 28, 28, 1]).div(255.0);
+        // Note: Frontend already sends normalized values [0, 1]
+        const input = tf.tensor(image).reshape([1, 28, 28, 1]);
 
         // 3. Predict
         const prediction = mnistModel.predict(input) as tf.Tensor;

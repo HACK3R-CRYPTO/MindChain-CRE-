@@ -81,7 +81,7 @@ export function MNISTCanvas() {
 
         ctx.fillStyle = 'white'
         ctx.beginPath()
-        ctx.arc(x, y, 8, 0, Math.PI * 2)
+        ctx.arc(x, y, 12, 0, Math.PI * 2)
         ctx.fill()
     }
 
