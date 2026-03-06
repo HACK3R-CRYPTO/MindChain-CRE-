@@ -78,6 +78,62 @@ export async function POST(request: Request) {
             paymentTxHash
         })
 
+        // ---------------------------------------------------------
+        // VERIFY PAYMENT ON-CHAIN (X402 STRICT VERIFICATION)
+        // ---------------------------------------------------------
+        const PAYMENT_GATEWAY_ADDRESS = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY_ADDRESS as `0x${string}`
+        const { createPublicClient, http } = require('viem')
+        const { baseSepolia } = require('viem/chains')
+
+        if (!paymentTxHash) {
+            return NextResponse.json(
+                { error: 'Payment transaction hash required (x402)' },
+                { status: 402 }
+            )
+        }
+
+        try {
+            console.log(`[SEC-VISION] Checking payment: ${paymentTxHash}`)
+            const publicClient = createPublicClient({
+                chain: baseSepolia,
+                transport: http()
+            })
+
+            const receipt = await publicClient.getTransactionReceipt({ hash: paymentTxHash })
+
+            if (receipt.status !== 'success') {
+                throw new Error('Payment transaction reverted on-chain')
+            }
+
+            // 1. Verify Destination
+            if (receipt.to?.toLowerCase() !== PAYMENT_GATEWAY_ADDRESS?.toLowerCase()) {
+                throw new Error('Transaction destination mismatch')
+            }
+
+            // 2. Freshness check (Avoid reuse of old payments)
+            const block = await publicClient.getBlock({ blockHash: receipt.blockHash })
+            const now = BigInt(Math.floor(Date.now() / 1000))
+            const ageSeconds = now - block.timestamp
+
+            console.log(`[SEC-VISION] Age: ${ageSeconds}s`)
+
+            if (ageSeconds > 600n) {
+                throw new Error('Payment transaction has expired (older than 10 mins)')
+            }
+
+            console.log('[SEC-VISION] PAYMENT VERIFIED SUCCESSFULLY')
+
+        } catch (verificationError: any) {
+            console.error('[SEC-VISION] SECURITY BLOCK:', verificationError.message)
+            return NextResponse.json(
+                {
+                    error: `Security Block: ${verificationError.message}`,
+                    reason: 'Compute request denied. Valid USDC payment expected.'
+                },
+                { status: 402 }
+            )
+        }
+
         // 1. Ensure model is loaded
         const mnistModel = await loadModel();
 

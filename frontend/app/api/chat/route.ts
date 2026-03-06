@@ -19,32 +19,55 @@ export async function POST(request: NextRequest) {
         }
 
         // ---------------------------------------------------------
-        // VERIFY PAYMENT ON-CHAIN
+        // VERIFY PAYMENT ON-CHAIN (X402 STRICT VERIFICATION)
         // ---------------------------------------------------------
-        try {
-            const publicClient = createPublicClient({
-                chain: baseSepolia,
-                transport: http()
-            })
+        console.log(`[SEC] Payment verification started for ${txHash} (User: ${userAddress})`)
+        const publicClient = createPublicClient({
+            chain: baseSepolia,
+            transport: http()
+        })
 
-            const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash })
+        try {
+            const receipt = await publicClient.getTransactionReceipt({ hash: txHash })
+
+            console.log(`[SEC] Receipt Found: Status=${receipt.status}, From=${receipt.from}, To=${receipt.to}`)
 
             if (receipt.status !== 'success') {
-                throw new Error('Payment transaction reverted')
+                throw new Error('Payment transaction failed on-chain')
             }
 
-            // Verify interaction with Payment Gateway
+            // 1. Verify Destination
             if (receipt.to?.toLowerCase() !== PAYMENT_GATEWAY_ADDRESS.toLowerCase()) {
-                throw new Error('Transaction was not sent to Payment Gateway')
+                console.error(`[SEC] Address Mismatch: Expected ${PAYMENT_GATEWAY_ADDRESS}, Got ${receipt.to}`)
+                throw new Error('Transaction destination mismatch')
             }
 
-            // (Optional) Check logs for 'PaymentReceived' event for strictness
-            // For hackathon, status + to address is sufficient proof of attempted payment
+            // 2. Verify Sender (Must match the wallet requesting the AI)
+            if (receipt.from.toLowerCase() !== userAddress.toLowerCase()) {
+                console.error(`[SEC] Sender Mismatch: Expected ${userAddress}, Got ${receipt.from}`)
+                throw new Error('Transaction sender mismatch')
+            }
+
+            // 3. Verify Freshness (Strict 10 min window)
+            const block = await publicClient.getBlock({ blockHash: receipt.blockHash })
+            const now = BigInt(Math.floor(Date.now() / 1000))
+            const ageSeconds = now - block.timestamp
+
+            console.log(`[SEC] Transaction Age: ${ageSeconds}s`)
+
+            if (ageSeconds > 600n) {
+                throw new Error('Payment transaction has expired (older than 10 mins)')
+            }
+
+            console.log(`✅ [SEC] PAYMENT VERIFIED SUCCESSFULLY for ${userAddress}`)
 
         } catch (verificationError: any) {
-            console.error('Payment Verification Failed:', verificationError)
+            console.error('❌ [SEC] SECURITY BLOCK:', verificationError.message)
             return NextResponse.json(
-                { error: `Payment Verification Failed: ${verificationError.message}` },
+                {
+                    error: `Security Block: ${verificationError.message}`,
+                    reason: 'Your payment could not be verified on Base Sepolia. Please ensure your transaction settled successfully.'
+                },
                 { status: 402 }
             )
         }

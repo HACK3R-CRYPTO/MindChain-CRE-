@@ -111,6 +111,7 @@ export function AIChat() {
             setStatus('Payment confirmed! Thinking...')
 
             // 3. Call CRE / Simulation API
+            setStatus('Payment confirmed! Getting AI response...')
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
@@ -126,9 +127,15 @@ export function AIChat() {
 
             const data = await response.json()
 
+            if (!response.ok) {
+                // Handle specific security or payment errors from backend
+                const errorDetail = data.reason || data.error || 'Request failed'
+                throw new Error(errorDetail)
+            }
+
             const assistantMessage: Message = {
                 role: 'assistant',
-                content: data.response || data.result || 'Sorry, I encountered an error.',
+                content: data.response || data.result || 'AI response failed to load.',
                 timestamp: new Date(),
                 source: data.source,
                 agentReputation: data.agent?.reputation || agentReputation
@@ -137,9 +144,11 @@ export function AIChat() {
             setMessages((prev) => [...prev, assistantMessage])
         } catch (error) {
             console.error('Chat error:', error)
+            const errorMsg = error instanceof Error ? error.message : 'Unknown payment or AI error'
+
             const errorMessage: Message = {
                 role: 'assistant',
-                content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                content: `⚠️ **Security/Payment Alert:** ${errorMsg}`,
                 timestamp: new Date(),
             }
             setMessages((prev) => [...prev, errorMessage])
