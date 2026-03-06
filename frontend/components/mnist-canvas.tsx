@@ -30,6 +30,18 @@ export function MNISTCanvas() {
 
     const { writeContractAsync } = useWriteContract()
 
+    // Fetch USDC Balance
+    const { data: usdcBalance } = useReadContract({
+        address: USDC_ADDRESS,
+        abi: IERC20_ABI,
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: {
+            enabled: !!address,
+            refetchInterval: 5000
+        }
+    })
+
     // Watch for transaction receipt
     const { isLoading: isTxConfirming, isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
         hash: currentTxHash,
@@ -108,9 +120,15 @@ export function MNISTCanvas() {
 
         setIsLoading(true)
         setError(null)
-        setPaymentStatus('Processing payment...')
+        setPaymentStatus('Sanity check: verifying balance...')
 
         try {
+            // SANITY CHECK: Check USDC Balance BEFORE any popups
+            const balance = usdcBalance ? BigInt(usdcBalance.toString()) : 0n
+            if (balance < PREDICTION_COST) {
+                throw new Error(`Insufficient USDC balance. You have ${(Number(balance) / 1e6).toFixed(2)} USDC but need 0.01 USDC.`)
+            }
+
             // 1. Approve USDC
             setPaymentStatus('Please approve USDC spending...')
             const approveTx = await writeContractAsync({

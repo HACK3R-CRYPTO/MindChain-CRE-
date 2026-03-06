@@ -110,26 +110,21 @@ export async function POST(request: Request) {
                 throw new Error('Transaction destination mismatch')
             }
 
-            // 2. Freshness check (Avoid reuse of old payments)
+            // 2. Freshness check (10 min window)
             const block = await publicClient.getBlock({ blockHash: receipt.blockHash })
             const now = BigInt(Math.floor(Date.now() / 1000))
             const ageSeconds = now - block.timestamp
 
-            console.log(`[SEC-VISION] Age: ${ageSeconds}s`)
-
             if (ageSeconds > 600n) {
-                throw new Error('Payment transaction has expired (older than 10 mins)')
+                throw new Error('Payment transaction has expired')
             }
 
-            console.log('[SEC-VISION] PAYMENT VERIFIED SUCCESSFULLY')
+            console.log('[SEC-VISION] PAYMENT VERIFIED')
 
         } catch (verificationError: any) {
             console.error('[SEC-VISION] SECURITY BLOCK:', verificationError.message)
             return NextResponse.json(
-                {
-                    error: `Security Block: ${verificationError.message}`,
-                    reason: 'Compute request denied. Valid USDC payment expected.'
-                },
+                { error: `Security Block: ${verificationError.message}` },
                 { status: 402 }
             )
         }

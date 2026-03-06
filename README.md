@@ -241,11 +241,11 @@ Detailed documentation for each component can be found here:
 This project uses the following Chainlink components:
 
 ### CRE Workflow (`ai-agent/`)
-- [**main.ts**](./ai-agent/main.ts): Main workflow logic using Chainlink CRE SDK.
-  - **On-Chain Identity**: Uses `ethers` to fetch real-time identity/reputation via `getAgentInfo`.
-  - **Secret Management**: Uses `runtime.getSecret().result()` for standardized security.
-  - **HTTP Client Capability**: Calls Gemini AI.
-
+- [**main.ts**](./ai-agent/main.ts): The core execution logic.
+  - **Chainlink SDK**: Imports `@chainlink/cre-sdk` to orchestrate decentralized behavior.
+  - **Capabilities**: Uses `HTTPCapability` to securely call external AI models (Gemini).
+  - **Secret Management**: Uses `runtime.getSecret()` to handle API keys securely within the runtime.
+- [**workflow.yaml**](./ai-agent/workflow.yaml): The official CRE configuration file defining the execution environment and secrets schema.
 ### Smart Contracts (`contracts/`)
 - [**AgentRegistry.sol**](./contracts/contracts/AgentRegistry.sol): ERC-8004 Identity Registry with on-chain name storage.
 - [**PaymentGateway.sol**](./contracts/contracts/PaymentGateway.sol): x402 payment verification.

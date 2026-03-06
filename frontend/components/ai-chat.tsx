@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent } from 'react'
 import ReactMarkdown from 'react-markdown'
-import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
+import { useAccount, useWriteContract, usePublicClient, useReadContract } from 'wagmi'
 import { parseUnits, keccak256, toHex } from 'viem'
 import { IERC20_ABI, PAYMENT_GATEWAY_ABI, REPUTATION_REGISTRY_ABI } from '@/lib/abis'
 
@@ -36,6 +36,18 @@ export function AIChat() {
     const { writeContractAsync } = useWriteContract()
     const publicClient = usePublicClient()
 
+    // Fetch USDC Balance
+    const { data: usdcBalance } = useReadContract({
+        address: USDC_ADDRESS,
+        abi: IERC20_ABI,
+        functionName: 'balanceOf',
+        args: address ? [address] : undefined,
+        query: {
+            enabled: !!address,
+            refetchInterval: 5000 // Fast refetch for demo
+        }
+    })
+
     // Fetch Reputation on load
     useEffect(() => {
         const fetchReputation = async () => {
@@ -65,18 +77,25 @@ export function AIChat() {
         e.preventDefault()
         if (!input.trim() || !address) return
 
-        const userMessage: Message = {
-            role: 'user',
-            content: input,
-            timestamp: new Date(),
-        }
-
-        setMessages((prev) => [...prev, userMessage])
-        setInput('')
         setIsLoading(true)
-        setStatus('Initiating payment...')
+        setStatus('Sanity check: verifying USDC...')
 
         try {
+            // SANITY CHECK: Check USDC Balance BEFORE any popups
+            const balance = usdcBalance ? BigInt(usdcBalance.toString()) : 0n
+            if (balance < CHAT_COST) {
+                throw new Error(`Insufficient USDC. You have ${(Number(balance) / 1e6).toFixed(2)} USDC but need 0.01 USDC.`)
+            }
+
+            const userMessage: Message = {
+                role: 'user',
+                content: input,
+                timestamp: new Date(),
+            }
+
+            setMessages((prev) => [...prev, userMessage])
+            setInput('')
+
             // 1. Approve USDC
             setStatus('Approve USDC spending...')
             await writeContractAsync({
@@ -129,8 +148,7 @@ export function AIChat() {
 
             if (!response.ok) {
                 // Handle specific security or payment errors from backend
-                const errorDetail = data.reason || data.error || 'Request failed'
-                throw new Error(errorDetail)
+                throw new Error(data.error || 'Request failed')
             }
 
             const assistantMessage: Message = {
@@ -144,11 +162,9 @@ export function AIChat() {
             setMessages((prev) => [...prev, assistantMessage])
         } catch (error) {
             console.error('Chat error:', error)
-            const errorMsg = error instanceof Error ? error.message : 'Unknown payment or AI error'
-
             const errorMessage: Message = {
                 role: 'assistant',
-                content: `⚠️ **Security/Payment Alert:** ${errorMsg}`,
+                content: `Chat failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 timestamp: new Date(),
             }
             setMessages((prev) => [...prev, errorMessage])
